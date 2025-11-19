@@ -1,0 +1,4 @@
+module potty_bridgeFFI {
+    header "potty_bridgeFFI.h"
+    export *
+}

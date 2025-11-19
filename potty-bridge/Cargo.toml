@@ -1,0 +1,23 @@
+[package]
+name = "potty-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+librespot-core = { path = "../core", version = "0.8.0" }
+librespot-oauth = { path = "../oauth", version = "0.8.0" }
+uniffi = { version = "0.28", features = ["cli"] }
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
+thiserror = "2"
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }
+
+[[bin]]
+name = "potty-bridge-bindgen"
+path = "src/bin/bindgen.rs"
