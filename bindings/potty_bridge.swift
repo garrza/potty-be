@@ -399,6 +399,38 @@ fileprivate class UniffiHandleMap<T> {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterUInt16: FfiConverterPrimitive {
+    typealias FfiType = UInt16
+    typealias SwiftType = UInt16
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt16 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -443,6 +475,16 @@ fileprivate struct FfiConverterString: FfiConverter {
 public protocol PottyClientProtocol : AnyObject {
     
     func login() async throws  -> String
+    
+    func pause() throws 
+    
+    func play() throws 
+    
+    func playUri(uri: String) throws 
+    
+    func search(query: String) async throws  -> [PottyTrack]
+    
+    func setDelegate(delegate: PottyDelegate) 
     
 }
 
@@ -520,6 +562,49 @@ open func login()async throws  -> String {
         )
 }
     
+open func pause()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_pause(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func play()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_play(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func playUri(uri: String)throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_play_uri(self.uniffiClonePointer(),
+        FfiConverterString.lower(uri),$0
+    )
+}
+}
+    
+open func search(query: String)async throws  -> [PottyTrack] {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_potty_bridge_fn_method_pottyclient_search(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(query)
+                )
+            },
+            pollFunc: ffi_potty_bridge_rust_future_poll_rust_buffer,
+            completeFunc: ffi_potty_bridge_rust_future_complete_rust_buffer,
+            freeFunc: ffi_potty_bridge_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypePottyTrack.lift,
+            errorHandler: FfiConverterTypePottyError.lift
+        )
+}
+    
+open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
+    uniffi_potty_bridge_fn_method_pottyclient_set_delegate(self.uniffiClonePointer(),
+        FfiConverterCallbackInterfacePottyDelegate.lower(delegate),$0
+    )
+}
+}
+    
 
 }
 
@@ -575,12 +660,111 @@ public func FfiConverterTypePottyClient_lower(_ value: PottyClient) -> UnsafeMut
 }
 
 
+public struct PottyTrack {
+    public var id: String
+    public var name: String
+    public var artist: String
+    public var album: String
+    public var uri: String
+    public var durationMs: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, name: String, artist: String, album: String, uri: String, durationMs: UInt32) {
+        self.id = id
+        self.name = name
+        self.artist = artist
+        self.album = album
+        self.uri = uri
+        self.durationMs = durationMs
+    }
+}
+
+
+
+extension PottyTrack: Equatable, Hashable {
+    public static func ==(lhs: PottyTrack, rhs: PottyTrack) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.artist != rhs.artist {
+            return false
+        }
+        if lhs.album != rhs.album {
+            return false
+        }
+        if lhs.uri != rhs.uri {
+            return false
+        }
+        if lhs.durationMs != rhs.durationMs {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(artist)
+        hasher.combine(album)
+        hasher.combine(uri)
+        hasher.combine(durationMs)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottyTrack: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottyTrack {
+        return
+            try PottyTrack(
+                id: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                artist: FfiConverterString.read(from: &buf), 
+                album: FfiConverterString.read(from: &buf), 
+                uri: FfiConverterString.read(from: &buf), 
+                durationMs: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PottyTrack, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.artist, into: &buf)
+        FfiConverterString.write(value.album, into: &buf)
+        FfiConverterString.write(value.uri, into: &buf)
+        FfiConverterUInt32.write(value.durationMs, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyTrack_lift(_ buf: RustBuffer) throws -> PottyTrack {
+    return try FfiConverterTypePottyTrack.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyTrack_lower(_ value: PottyTrack) -> RustBuffer {
+    return FfiConverterTypePottyTrack.lower(value)
+}
+
+
 public enum PottyError {
 
     
     
     case Generic(String
     )
+    case NotConnected
 }
 
 
@@ -600,6 +784,7 @@ public struct FfiConverterTypePottyError: FfiConverterRustBuffer {
         case 1: return .Generic(
             try FfiConverterString.read(from: &buf)
             )
+        case 2: return .NotConnected
 
          default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -616,6 +801,10 @@ public struct FfiConverterTypePottyError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
             FfiConverterString.write(v1, into: &buf)
             
+        
+        case .NotConnected:
+            writeInt(&buf, Int32(2))
+        
         }
     }
 }
@@ -626,6 +815,243 @@ extension PottyError: Equatable, Hashable {}
 extension PottyError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
+    }
+}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum PottyPlayerEvent {
+    
+    case playing(trackId: String
+    )
+    case paused(trackId: String
+    )
+    case stopped(trackId: String
+    )
+    case endOfTrack(trackId: String
+    )
+    case volumeChanged(volume: UInt16
+    )
+    case unknown
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottyPlayerEvent: FfiConverterRustBuffer {
+    typealias SwiftType = PottyPlayerEvent
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottyPlayerEvent {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .playing(trackId: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .paused(trackId: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .stopped(trackId: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .endOfTrack(trackId: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .volumeChanged(volume: try FfiConverterUInt16.read(from: &buf)
+        )
+        
+        case 6: return .unknown
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: PottyPlayerEvent, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .playing(trackId):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(trackId, into: &buf)
+            
+        
+        case let .paused(trackId):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(trackId, into: &buf)
+            
+        
+        case let .stopped(trackId):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(trackId, into: &buf)
+            
+        
+        case let .endOfTrack(trackId):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(trackId, into: &buf)
+            
+        
+        case let .volumeChanged(volume):
+            writeInt(&buf, Int32(5))
+            FfiConverterUInt16.write(volume, into: &buf)
+            
+        
+        case .unknown:
+            writeInt(&buf, Int32(6))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyPlayerEvent_lift(_ buf: RustBuffer) throws -> PottyPlayerEvent {
+    return try FfiConverterTypePottyPlayerEvent.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyPlayerEvent_lower(_ value: PottyPlayerEvent) -> RustBuffer {
+    return FfiConverterTypePottyPlayerEvent.lower(value)
+}
+
+
+
+extension PottyPlayerEvent: Equatable, Hashable {}
+
+
+
+
+
+
+public protocol PottyDelegate : AnyObject {
+    
+    func onPlayerEvent(event: PottyPlayerEvent) 
+    
+}
+
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfacePottyDelegate {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfacePottyDelegate = UniffiVTableCallbackInterfacePottyDelegate(
+        onPlayerEvent: { (
+            uniffiHandle: UInt64,
+            event: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterCallbackInterfacePottyDelegate.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onPlayerEvent(
+                     event: try FfiConverterTypePottyPlayerEvent.lift(event)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterCallbackInterfacePottyDelegate.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface PottyDelegate: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitPottyDelegate() {
+    uniffi_potty_bridge_fn_init_callback_vtable_pottydelegate(&UniffiCallbackInterfacePottyDelegate.vtable)
+}
+
+// FfiConverter protocol for callback interfaces
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterCallbackInterfacePottyDelegate {
+    fileprivate static var handleMap = UniffiHandleMap<PottyDelegate>()
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+extension FfiConverterCallbackInterfacePottyDelegate : FfiConverter {
+    typealias SwiftType = PottyDelegate
+    typealias FfiType = UInt64
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lift(_ handle: UInt64) throws -> SwiftType {
+        try handleMap.get(handle: handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lower(_ v: SwiftType) -> UInt64 {
+        return handleMap.insert(obj: v)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(v))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypePottyTrack: FfiConverterRustBuffer {
+    typealias SwiftType = [PottyTrack]
+
+    public static func write(_ value: [PottyTrack], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePottyTrack.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PottyTrack] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PottyTrack]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePottyTrack.read(from: &buf))
+        }
+        return seq
     }
 }
 private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
@@ -693,10 +1119,29 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 56881) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_pause() != 52584) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_play() != 14965) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_play_uri() != 49606) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 33131) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 49108) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_constructor_pottyclient_new() != 38334) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottydelegate_on_player_event() != 49082) {
+        return InitializationResult.apiChecksumMismatch
+    }
 
+    uniffiCallbackInitPottyDelegate()
     return InitializationResult.ok
 }()
 

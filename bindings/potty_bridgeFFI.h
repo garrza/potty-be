@@ -251,6 +251,21 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_POTTY_DELEGATE_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_POTTY_DELEGATE_METHOD0
+typedef void (*UniffiCallbackInterfacePottyDelegateMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_POTTY_DELEGATE
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_POTTY_DELEGATE
+typedef struct UniffiVTableCallbackInterfacePottyDelegate {
+    UniffiCallbackInterfacePottyDelegateMethod0 _Nonnull onPlayerEvent;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfacePottyDelegate;
+
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_CLONE_POTTYCLIENT
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_CLONE_POTTYCLIENT
 void*_Nonnull uniffi_potty_bridge_fn_clone_pottyclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -270,6 +285,36 @@ void*_Nonnull uniffi_potty_bridge_fn_constructor_pottyclient_new(RustCallStatus 
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
 uint64_t uniffi_potty_bridge_fn_method_pottyclient_login(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PAUSE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PAUSE
+void uniffi_potty_bridge_fn_method_pottyclient_pause(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PLAY
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PLAY
+void uniffi_potty_bridge_fn_method_pottyclient_play(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PLAY_URI
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PLAY_URI
+void uniffi_potty_bridge_fn_method_pottyclient_play_uri(void*_Nonnull ptr, RustBuffer uri, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
+uint64_t uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
+void uniffi_potty_bridge_fn_method_pottyclient_set_delegate(void*_Nonnull ptr, uint64_t delegate, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_POTTYDELEGATE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_POTTYDELEGATE
+void uniffi_potty_bridge_fn_init_callback_vtable_pottydelegate(UniffiVTableCallbackInterfacePottyDelegate* _Nonnull vtable
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_POTTY_BRIDGE_RUSTBUFFER_ALLOC
@@ -558,9 +603,45 @@ uint16_t uniffi_potty_bridge_checksum_method_pottyclient_login(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PAUSE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PAUSE
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_pause(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PLAY
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PLAY
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_play(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PLAY_URI
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_PLAY_URI
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_play_uri(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SEARCH
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_search(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_set_delegate(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_CONSTRUCTOR_POTTYCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_CONSTRUCTOR_POTTYCLIENT_NEW
 uint16_t uniffi_potty_bridge_checksum_constructor_pottyclient_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYDELEGATE_ON_PLAYER_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYDELEGATE_ON_PLAYER_EVENT
+uint16_t uniffi_potty_bridge_checksum_method_pottydelegate_on_player_event(void
     
 );
 #endif
