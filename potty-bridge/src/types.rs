@@ -7,6 +7,7 @@ pub struct PottyTrack {
     pub album: String,
     pub uri: String,
     pub duration_ms: u32,
+    pub image_url: String,
 }
 
 /// Represents a Spotify playlist with metadata

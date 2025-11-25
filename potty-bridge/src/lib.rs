@@ -241,6 +241,26 @@ impl PottyClient {
         
         api.get_playlist_tracks(&playlist_id)
     }
+    
+    /// Gets the user's saved albums
+    pub fn get_user_saved_albums(&self) -> Result<Vec<PottyAlbum>, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api_guard = self.spotify_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        
+        api.get_user_saved_albums()
+    }
+    
+    /// Gets the user's followed artists
+    pub fn get_user_followed_artists(&self) -> Result<Vec<PottyArtist>, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api_guard = self.spotify_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        
+        api.get_user_followed_artists()
+    }
 }
 
 // UniFFI scaffolding

@@ -89,6 +89,46 @@ impl SpotifyApiManager {
         })
     }
     
+    /// Gets the user's saved albums
+    pub fn get_user_saved_albums(&self) -> Result<Vec<PottyAlbum>, PottyError> {
+        let api = self.api.clone();
+        
+        self.runtime.block_on(async move {
+            let result = api
+                .current_user_saved_albums_manual(Some(Market::FromToken), Some(DEFAULT_LIMIT), None)
+                .await
+                .map_err(PottyError::from_error)?;
+            
+            let albums = result
+                .items
+                .into_iter()
+                .map(|saved_album| Self::full_album_to_potty_album(saved_album.album))
+                .collect();
+            
+            Ok(albums)
+        })
+    }
+    
+    /// Gets the user's followed artists
+    pub fn get_user_followed_artists(&self) -> Result<Vec<PottyArtist>, PottyError> {
+        let api = self.api.clone();
+        
+        self.runtime.block_on(async move {
+            let result = api
+                .current_user_followed_artists(None, Some(DEFAULT_LIMIT))
+                .await
+                .map_err(PottyError::from_error)?;
+            
+            let artists = result
+                .items
+                .into_iter()
+                .map(Self::artist_to_potty_artist)
+                .collect();
+            
+            Ok(artists)
+        })
+    }
+    
     /// Gets the user's playlists
     pub fn get_user_playlists(&self) -> Result<Vec<PottyPlaylist>, PottyError> {
         let api = self.api.clone();
@@ -272,6 +312,13 @@ impl SpotifyApiManager {
             .map(|id| format!("spotify:track:{}", id.id()))
             .unwrap_or_default();
         
+        let image_url = track
+            .album
+            .images
+            .first()
+            .map(|img| img.url.clone())
+            .unwrap_or_default();
+        
         PottyTrack {
             id: track.id.map(|id| id.to_string()).unwrap_or_default(),
             name: track.name,
@@ -283,6 +330,7 @@ impl SpotifyApiManager {
             album: track.album.name,
             uri,
             duration_ms: track.duration.num_milliseconds() as u32,
+            image_url,
         }
     }
     
@@ -311,6 +359,31 @@ impl SpotifyApiManager {
             uri,
             release_date: album.release_date.unwrap_or_default(),
             total_tracks: 0, // SimplifiedAlbum doesn't include track count
+            image_url,
+        }
+    }
+    
+    /// Converts an rspotify FullAlbum to PottyAlbum
+    fn full_album_to_potty_album(album: rspotify::model::FullAlbum) -> PottyAlbum {
+        let uri = format!("spotify:album:{}", album.id.id());
+        
+        let image_url = album
+            .images
+            .first()
+            .map(|img| img.url.clone())
+            .unwrap_or_default();
+        
+        PottyAlbum {
+            id: album.id.to_string(),
+            name: album.name,
+            artist: album
+                .artists
+                .first()
+                .map(|a| a.name.clone())
+                .unwrap_or_default(),
+            uri,
+            release_date: album.release_date,
+            total_tracks: album.tracks.items.len() as u32,
             image_url,
         }
     }

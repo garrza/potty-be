@@ -502,9 +502,19 @@ public protocol PottyClientProtocol : AnyObject {
     func getPlaylistTracks(playlistId: String) throws  -> [PottyTrack]
     
     /**
+     * Gets the user's followed artists
+     */
+    func getUserFollowedArtists() throws  -> [PottyArtist]
+    
+    /**
      * Gets the user's playlists
      */
     func getUserPlaylists() throws  -> [PottyPlaylist]
+    
+    /**
+     * Gets the user's saved albums
+     */
+    func getUserSavedAlbums() throws  -> [PottyAlbum]
     
     /**
      * Gets the current playback volume (0-65535, where 65535 is 100%)
@@ -674,11 +684,31 @@ open func getPlaylistTracks(playlistId: String)throws  -> [PottyTrack] {
 }
     
     /**
+     * Gets the user's followed artists
+     */
+open func getUserFollowedArtists()throws  -> [PottyArtist] {
+    return try  FfiConverterSequenceTypePottyArtist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_user_followed_artists(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Gets the user's playlists
      */
 open func getUserPlaylists()throws  -> [PottyPlaylist] {
     return try  FfiConverterSequenceTypePottyPlaylist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Gets the user's saved albums
+     */
+open func getUserSavedAlbums()throws  -> [PottyAlbum] {
+    return try  FfiConverterSequenceTypePottyAlbum.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_user_saved_albums(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -1241,16 +1271,18 @@ public struct PottyTrack {
     public var album: String
     public var uri: String
     public var durationMs: UInt32
+    public var imageUrl: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, name: String, artist: String, album: String, uri: String, durationMs: UInt32) {
+    public init(id: String, name: String, artist: String, album: String, uri: String, durationMs: UInt32, imageUrl: String) {
         self.id = id
         self.name = name
         self.artist = artist
         self.album = album
         self.uri = uri
         self.durationMs = durationMs
+        self.imageUrl = imageUrl
     }
 }
 
@@ -1276,6 +1308,9 @@ extension PottyTrack: Equatable, Hashable {
         if lhs.durationMs != rhs.durationMs {
             return false
         }
+        if lhs.imageUrl != rhs.imageUrl {
+            return false
+        }
         return true
     }
 
@@ -1286,6 +1321,7 @@ extension PottyTrack: Equatable, Hashable {
         hasher.combine(album)
         hasher.combine(uri)
         hasher.combine(durationMs)
+        hasher.combine(imageUrl)
     }
 }
 
@@ -1302,7 +1338,8 @@ public struct FfiConverterTypePottyTrack: FfiConverterRustBuffer {
                 artist: FfiConverterString.read(from: &buf), 
                 album: FfiConverterString.read(from: &buf), 
                 uri: FfiConverterString.read(from: &buf), 
-                durationMs: FfiConverterUInt32.read(from: &buf)
+                durationMs: FfiConverterUInt32.read(from: &buf), 
+                imageUrl: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -1313,6 +1350,7 @@ public struct FfiConverterTypePottyTrack: FfiConverterRustBuffer {
         FfiConverterString.write(value.album, into: &buf)
         FfiConverterString.write(value.uri, into: &buf)
         FfiConverterUInt32.write(value.durationMs, into: &buf)
+        FfiConverterString.write(value.imageUrl, into: &buf)
     }
 }
 
@@ -1887,7 +1925,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 7230) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_followed_artists() != 31742) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 5371) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_saved_albums() != 58112) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_volume() != 29931) {
