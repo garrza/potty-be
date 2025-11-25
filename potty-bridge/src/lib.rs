@@ -12,9 +12,10 @@ use thiserror::Error;
 use log::error;
 use rspotify::{AuthCodeSpotify, Token};
 use rspotify::prelude::*;
-use rspotify::model::{SearchType, SearchResult};
+use rspotify::model::{SearchType, SearchResult, SimplifiedPlaylist, PlayableItem, Market};
 use chrono::Duration as ChronoDuration;
 use tokio::runtime::Runtime;
+use tokio_stream::StreamExt;
 
 #[derive(Debug, Error, uniffi::Error)]
 pub enum PottyError {
@@ -32,6 +33,16 @@ pub struct PottyTrack {
     pub album: String,
     pub uri: String,
     pub duration_ms: u32,
+}
+
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct PottyPlaylist {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub uri: String,
+    pub track_count: u32,
+    pub image_url: String,
 }
 
 #[derive(Debug, Clone, uniffi::Enum)]
@@ -139,6 +150,9 @@ impl PottyClient {
              Ok(m) => m,
              Err(_) => return Err(PottyError::Generic("Failed to create mixer".to_string())),
         };
+        
+        // Set volume to maximum (users control via macOS volume)
+        mixer.set_volume(65535); // 65535 = 100% in Spotify's 16-bit volume scale
 
         let player = Player::new(
             player_config,
@@ -208,6 +222,20 @@ impl PottyClient {
         player.play();
         Ok(())
     }
+    
+    pub fn stop(&self) -> Result<(), PottyError> {
+        let player_guard = self.player.lock().unwrap();
+        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        player.stop();
+        Ok(())
+    }
+    
+    pub fn seek(&self, position_ms: u32) -> Result<(), PottyError> {
+        let player_guard = self.player.lock().unwrap();
+        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        player.seek(position_ms);
+        Ok(())
+    }
 
     pub fn search(&self, query: String) -> Result<Vec<PottyTrack>, PottyError> {
         // Enter the runtime context
@@ -227,12 +255,17 @@ impl PottyClient {
             match result {
                 SearchResult::Tracks(page) => {
                     let tracks = page.items.into_iter().map(|t| {
+                        // Build proper Spotify URI format: spotify:track:id
+                        let uri = t.id.as_ref()
+                            .map(|id| format!("spotify:track:{}", id.id()))
+                            .unwrap_or_default();
+                        
                         PottyTrack {
                             id: t.id.map(|id| id.to_string()).unwrap_or_default(),
                             name: t.name,
                             artist: t.artists.first().map(|a| a.name.clone()).unwrap_or_default(),
                             album: t.album.name,
-                            uri: t.external_urls.get("spotify").cloned().unwrap_or_default(),
+                            uri,
                             duration_ms: t.duration.num_milliseconds() as u32,
                         }
                     }).collect();
@@ -240,6 +273,119 @@ impl PottyClient {
                 },
                 _ => Ok(vec![])
             }
+        })
+    }
+    
+    pub fn get_liked_songs(&self) -> Result<Vec<PottyTrack>, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api = {
+            let api_guard = self.spotify_api.lock().unwrap();
+            api_guard.clone().ok_or(PottyError::NotConnected)?
+        };
+
+        self.runtime.block_on(async move {
+            let result = api.current_user_saved_tracks_manual(Some(Market::FromToken), Some(50), None)
+                .await
+                .map_err(|e| PottyError::Generic(e.to_string()))?;
+
+            let tracks = result.items.into_iter().filter_map(|saved_track| {
+                let track = saved_track.track;
+                let uri = track.id.as_ref()
+                    .map(|id| format!("spotify:track:{}", id.id()))
+                    .unwrap_or_default();
+                
+                Some(PottyTrack {
+                    id: track.id.map(|id| id.to_string()).unwrap_or_default(),
+                    name: track.name,
+                    artist: track.artists.first().map(|a| a.name.clone()).unwrap_or_default(),
+                    album: track.album.name,
+                    uri,
+                    duration_ms: track.duration.num_milliseconds() as u32,
+                })
+            }).collect();
+            
+            Ok(tracks)
+        })
+    }
+    
+    pub fn get_user_playlists(&self) -> Result<Vec<PottyPlaylist>, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api = {
+            let api_guard = self.spotify_api.lock().unwrap();
+            api_guard.clone().ok_or(PottyError::NotConnected)?
+        };
+
+        self.runtime.block_on(async move {
+            let result = api.current_user_playlists_manual(Some(50), None)
+                .await
+                .map_err(|e| PottyError::Generic(e.to_string()))?;
+
+            let playlists = result.items.into_iter().map(|pl| {
+                let uri = format!("spotify:playlist:{}", pl.id.id());
+                let image_url = pl.images.first()
+                    .map(|img| img.url.clone())
+                    .unwrap_or_default();
+                
+                PottyPlaylist {
+                    id: pl.id.id().to_string(),
+                    name: pl.name,
+                    description: String::new(), // SimplifiedPlaylist doesn't have description
+                    uri,
+                    track_count: pl.tracks.total,
+                    image_url,
+                }
+            }).collect();
+            
+            Ok(playlists)
+        })
+    }
+    
+    pub fn get_playlist_tracks(&self, playlist_id: String) -> Result<Vec<PottyTrack>, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api = {
+            let api_guard = self.spotify_api.lock().unwrap();
+            api_guard.clone().ok_or(PottyError::NotConnected)?
+        };
+
+        self.runtime.block_on(async move {
+            use rspotify::model::PlaylistId;
+            
+            let playlist_id = PlaylistId::from_id(&playlist_id)
+                .map_err(|e| PottyError::Generic(e.to_string()))?;
+            
+            let mut stream = api.playlist_items(playlist_id, None, None);
+            let mut all_items = Vec::new();
+            
+            while let Some(item_result) = stream.next().await {
+                match item_result {
+                    Ok(item) => all_items.push(item),
+                    Err(e) => return Err(PottyError::Generic(e.to_string())),
+                }
+            }
+
+            let tracks = all_items.into_iter().filter_map(|item| {
+                if let Some(PlayableItem::Track(track)) = item.track {
+                    let uri = track.id.as_ref()
+                        .map(|id| format!("spotify:track:{}", id.id()))
+                        .unwrap_or_default();
+                    
+                    Some(PottyTrack {
+                        id: track.id.map(|id| id.to_string()).unwrap_or_default(),
+                        name: track.name,
+                        artist: track.artists.first().map(|a| a.name.clone()).unwrap_or_default(),
+                        album: track.album.name,
+                        uri,
+                        duration_ms: track.duration.num_milliseconds() as u32,
+                    })
+                } else {
+                    None
+                }
+            }).collect();
+            
+            Ok(tracks)
         })
     }
 }

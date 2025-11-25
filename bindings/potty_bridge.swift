@@ -474,6 +474,12 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public protocol PottyClientProtocol : AnyObject {
     
+    func getLikedSongs() throws  -> [PottyTrack]
+    
+    func getPlaylistTracks(playlistId: String) throws  -> [PottyTrack]
+    
+    func getUserPlaylists() throws  -> [PottyPlaylist]
+    
     func login() throws  -> String
     
     func pause() throws 
@@ -484,7 +490,11 @@ public protocol PottyClientProtocol : AnyObject {
     
     func search(query: String) throws  -> [PottyTrack]
     
+    func seek(positionMs: UInt32) throws 
+    
     func setDelegate(delegate: PottyDelegate) 
+    
+    func stop() throws 
     
 }
 
@@ -545,6 +555,28 @@ public convenience init() {
     
 
     
+open func getLikedSongs()throws  -> [PottyTrack] {
+    return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func getPlaylistTracks(playlistId: String)throws  -> [PottyTrack] {
+    return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_playlist_tracks(self.uniffiClonePointer(),
+        FfiConverterString.lower(playlistId),$0
+    )
+})
+}
+    
+open func getUserPlaylists()throws  -> [PottyPlaylist] {
+    return try  FfiConverterSequenceTypePottyPlaylist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func login()throws  -> String {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_login(self.uniffiClonePointer(),$0
@@ -579,9 +611,22 @@ open func search(query: String)throws  -> [PottyTrack] {
 })
 }
     
+open func seek(positionMs: UInt32)throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_seek(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(positionMs),$0
+    )
+}
+}
+    
 open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
     uniffi_potty_bridge_fn_method_pottyclient_set_delegate(self.uniffiClonePointer(),
         FfiConverterCallbackInterfacePottyDelegate.lower(delegate),$0
+    )
+}
+}
+    
+open func stop()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_stop(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -638,6 +683,104 @@ public func FfiConverterTypePottyClient_lift(_ pointer: UnsafeMutableRawPointer)
 #endif
 public func FfiConverterTypePottyClient_lower(_ value: PottyClient) -> UnsafeMutableRawPointer {
     return FfiConverterTypePottyClient.lower(value)
+}
+
+
+public struct PottyPlaylist {
+    public var id: String
+    public var name: String
+    public var description: String
+    public var uri: String
+    public var trackCount: UInt32
+    public var imageUrl: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, name: String, description: String, uri: String, trackCount: UInt32, imageUrl: String) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.uri = uri
+        self.trackCount = trackCount
+        self.imageUrl = imageUrl
+    }
+}
+
+
+
+extension PottyPlaylist: Equatable, Hashable {
+    public static func ==(lhs: PottyPlaylist, rhs: PottyPlaylist) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.description != rhs.description {
+            return false
+        }
+        if lhs.uri != rhs.uri {
+            return false
+        }
+        if lhs.trackCount != rhs.trackCount {
+            return false
+        }
+        if lhs.imageUrl != rhs.imageUrl {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(description)
+        hasher.combine(uri)
+        hasher.combine(trackCount)
+        hasher.combine(imageUrl)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottyPlaylist: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottyPlaylist {
+        return
+            try PottyPlaylist(
+                id: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                description: FfiConverterString.read(from: &buf), 
+                uri: FfiConverterString.read(from: &buf), 
+                trackCount: FfiConverterUInt32.read(from: &buf), 
+                imageUrl: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PottyPlaylist, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.description, into: &buf)
+        FfiConverterString.write(value.uri, into: &buf)
+        FfiConverterUInt32.write(value.trackCount, into: &buf)
+        FfiConverterString.write(value.imageUrl, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyPlaylist_lift(_ buf: RustBuffer) throws -> PottyPlaylist {
+    return try FfiConverterTypePottyPlaylist.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyPlaylist_lower(_ value: PottyPlaylist) -> RustBuffer {
+    return FfiConverterTypePottyPlaylist.lower(value)
 }
 
 
@@ -1014,6 +1157,31 @@ extension FfiConverterCallbackInterfacePottyDelegate : FfiConverter {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypePottyPlaylist: FfiConverterRustBuffer {
+    typealias SwiftType = [PottyPlaylist]
+
+    public static func write(_ value: [PottyPlaylist], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePottyPlaylist.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PottyPlaylist] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PottyPlaylist]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePottyPlaylist.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePottyTrack: FfiConverterRustBuffer {
     typealias SwiftType = [PottyTrack]
 
@@ -1051,6 +1219,15 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 2894) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 4576) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 38305) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 46425) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1066,7 +1243,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 30699) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_seek() != 23239) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 49108) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_stop() != 60520) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_constructor_pottyclient_new() != 38334) {

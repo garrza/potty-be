@@ -13,6 +13,7 @@ librespot-playback = { path = "../playback", version = "0.8.0" }
 librespot-metadata = { path = "../metadata", version = "0.8.0" }
 uniffi = { version = "0.28", features = ["cli"] }
 tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
 log = "0.4"
 env_logger = "0.11"
 thiserror = "2"

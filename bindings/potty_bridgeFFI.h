@@ -282,6 +282,21 @@ void*_Nonnull uniffi_potty_bridge_fn_constructor_pottyclient_new(RustCallStatus 
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_LIKED_SONGS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_LIKED_SONGS
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_PLAYLIST_TRACKS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_PLAYLIST_TRACKS
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_playlist_tracks(void*_Nonnull ptr, RustBuffer playlist_id, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
 RustBuffer uniffi_potty_bridge_fn_method_pottyclient_login(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -307,9 +322,19 @@ void uniffi_potty_bridge_fn_method_pottyclient_play_uri(void*_Nonnull ptr, RustB
 RustBuffer uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEEK
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEEK
+void uniffi_potty_bridge_fn_method_pottyclient_seek(void*_Nonnull ptr, uint32_t position_ms, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
 void uniffi_potty_bridge_fn_method_pottyclient_set_delegate(void*_Nonnull ptr, uint64_t delegate, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_STOP
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_STOP
+void uniffi_potty_bridge_fn_method_pottyclient_stop(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_POTTYDELEGATE
@@ -597,6 +622,24 @@ void ffi_potty_bridge_rust_future_free_void(uint64_t handle
 void ffi_potty_bridge_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_PLAYLIST_TRACKS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_PLAYLIST_TRACKS
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_LOGIN
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_LOGIN
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_login(void
@@ -627,9 +670,21 @@ uint16_t uniffi_potty_bridge_checksum_method_pottyclient_search(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SEEK
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SEEK
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_seek(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_set_delegate(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_STOP
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_STOP
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_stop(void
     
 );
 #endif
