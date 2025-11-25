@@ -1,5 +1,5 @@
 use crate::error::PottyError;
-use crate::types::{PottyPlaylist, PottyTrack};
+use crate::types::{PottyAlbum, PottyArtist, PottyPlaylist, PottySearchResults, PottySearchType, PottyTrack};
 use chrono::Duration as ChronoDuration;
 use rspotify::model::{Market, PlayableItem, SearchResult, SearchType};
 use rspotify::prelude::*;
@@ -11,8 +11,8 @@ use tokio_stream::StreamExt;
 /// Default limit for paginated API requests
 const DEFAULT_LIMIT: u32 = 50;
 
-/// Default number of search results
-const SEARCH_LIMIT: u32 = 20;
+/// Maximum number of search results per request
+const MAX_SEARCH_LIMIT: u32 = 50;
 
 /// Manages Spotify Web API interactions
 pub struct SpotifyApiManager {
@@ -41,14 +41,17 @@ impl SpotifyApiManager {
         Self { api, runtime }
     }
     
-    /// Searches for tracks on Spotify
-    pub fn search(&self, query: &str) -> Result<Vec<PottyTrack>, PottyError> {
+    /// Searches for tracks on Spotify with pagination support
+    pub fn search(&self, query: &str, limit: u32, offset: u32) -> Result<Vec<PottyTrack>, PottyError> {
         let api = self.api.clone();
         let query = query.to_string();
         
+        // Clamp limit to MAX_SEARCH_LIMIT
+        let limit = limit.min(MAX_SEARCH_LIMIT);
+        
         self.runtime.block_on(async move {
             let result = api
-                .search(&query, SearchType::Track, None, None, Some(SEARCH_LIMIT), None)
+                .search(&query, SearchType::Track, None, None, Some(limit), Some(offset))
                 .await
                 .map_err(PottyError::from_error)?;
             
@@ -148,6 +151,119 @@ impl SpotifyApiManager {
         })
     }
     
+    /// Advanced search with filters and type selection
+    pub fn advanced_search(
+        &self,
+        query: &str,
+        search_type: &PottySearchType,
+        artist_filter: Option<&str>,
+        album_filter: Option<&str>,
+        track_filter: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<PottySearchResults, PottyError> {
+        let api = self.api.clone();
+        
+        // Build query with filters
+        let mut query_parts = Vec::new();
+        
+        if !query.is_empty() {
+            query_parts.push(query.to_string());
+        }
+        
+        if let Some(artist) = artist_filter {
+            if !artist.is_empty() {
+                query_parts.push(format!("artist:{}", artist));
+            }
+        }
+        
+        if let Some(album) = album_filter {
+            if !album.is_empty() {
+                query_parts.push(format!("album:{}", album));
+            }
+        }
+        
+        if let Some(track) = track_filter {
+            if !track.is_empty() {
+                query_parts.push(format!("track:{}", track));
+            }
+        }
+        
+        let final_query = query_parts.join(" ");
+        if final_query.is_empty() {
+            return Ok(PottySearchResults {
+                tracks: vec![],
+                albums: vec![],
+                artists: vec![],
+            });
+        }
+        
+        let limit = limit.min(MAX_SEARCH_LIMIT);
+        
+        self.runtime.block_on(async move {
+            let mut results = PottySearchResults {
+                tracks: vec![],
+                albums: vec![],
+                artists: vec![],
+            };
+            
+            // Determine which types to search
+            let search_tracks = matches!(search_type, PottySearchType::All | PottySearchType::Track);
+            let search_albums = matches!(search_type, PottySearchType::All | PottySearchType::Album);
+            let search_artists = matches!(search_type, PottySearchType::All | PottySearchType::Artist);
+            
+            // Search tracks
+            if search_tracks {
+                let result = api
+                    .search(&final_query, SearchType::Track, None, None, Some(limit), Some(offset))
+                    .await
+                    .map_err(PottyError::from_error)?;
+                
+                if let SearchResult::Tracks(page) = result {
+                    results.tracks = page
+                        .items
+                        .into_iter()
+                        .map(Self::track_to_potty_track)
+                        .collect();
+                }
+            }
+            
+            // Search albums
+            if search_albums {
+                let result = api
+                    .search(&final_query, SearchType::Album, None, None, Some(limit), Some(offset))
+                    .await
+                    .map_err(PottyError::from_error)?;
+                
+                if let SearchResult::Albums(page) = result {
+                    results.albums = page
+                        .items
+                        .into_iter()
+                        .map(Self::album_to_potty_album)
+                        .collect();
+                }
+            }
+            
+            // Search artists
+            if search_artists {
+                let result = api
+                    .search(&final_query, SearchType::Artist, None, None, Some(limit), Some(offset))
+                    .await
+                    .map_err(PottyError::from_error)?;
+                
+                if let SearchResult::Artists(page) = result {
+                    results.artists = page
+                        .items
+                        .into_iter()
+                        .map(Self::artist_to_potty_artist)
+                        .collect();
+                }
+            }
+            
+            Ok(results)
+        })
+    }
+    
     /// Converts an rspotify FullTrack to PottyTrack
     fn track_to_potty_track(track: rspotify::model::FullTrack) -> PottyTrack {
         let uri = track
@@ -167,6 +283,55 @@ impl SpotifyApiManager {
             album: track.album.name,
             uri,
             duration_ms: track.duration.num_milliseconds() as u32,
+        }
+    }
+    
+    /// Converts an rspotify SimplifiedAlbum to PottyAlbum
+    fn album_to_potty_album(album: rspotify::model::SimplifiedAlbum) -> PottyAlbum {
+        let uri = album
+            .id
+            .as_ref()
+            .map(|id| format!("spotify:album:{}", id.id()))
+            .unwrap_or_default();
+        
+        let image_url = album
+            .images
+            .first()
+            .map(|img| img.url.clone())
+            .unwrap_or_default();
+        
+        PottyAlbum {
+            id: album.id.map(|id| id.to_string()).unwrap_or_default(),
+            name: album.name,
+            artist: album
+                .artists
+                .first()
+                .map(|a| a.name.clone())
+                .unwrap_or_default(),
+            uri,
+            release_date: album.release_date.unwrap_or_default(),
+            total_tracks: 0, // SimplifiedAlbum doesn't include track count
+            image_url,
+        }
+    }
+    
+    /// Converts an rspotify FullArtist to PottyArtist
+    fn artist_to_potty_artist(artist: rspotify::model::FullArtist) -> PottyArtist {
+        let uri = format!("spotify:artist:{}", artist.id.id());
+        
+        let image_url = artist
+            .images
+            .first()
+            .map(|img| img.url.clone())
+            .unwrap_or_default();
+        
+        PottyArtist {
+            id: artist.id.to_string(),
+            name: artist.name,
+            uri,
+            genres: artist.genres,
+            image_url,
+            followers: artist.followers.total,
         }
     }
 }

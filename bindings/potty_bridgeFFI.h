@@ -282,6 +282,11 @@ void*_Nonnull uniffi_potty_bridge_fn_constructor_pottyclient_new(RustCallStatus 
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_ADVANCED_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_ADVANCED_SEARCH
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_advanced_search(void*_Nonnull ptr, RustBuffer query, RustBuffer search_type, RustBuffer artist_filter, RustBuffer album_filter, RustBuffer track_filter, uint32_t limit, uint32_t offset, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -295,6 +300,11 @@ RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_playlist_tracks(void*_N
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
 RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_VOLUME
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_VOLUME
+uint16_t uniffi_potty_bridge_fn_method_pottyclient_get_volume(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
@@ -319,7 +329,7 @@ void uniffi_potty_bridge_fn_method_pottyclient_play_uri(void*_Nonnull ptr, RustB
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
-RustBuffer uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query, uint32_t limit, uint32_t offset, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEEK
@@ -330,6 +340,11 @@ void uniffi_potty_bridge_fn_method_pottyclient_seek(void*_Nonnull ptr, uint32_t 
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE
 void uniffi_potty_bridge_fn_method_pottyclient_set_delegate(void*_Nonnull ptr, uint64_t delegate, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_VOLUME
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_VOLUME
+void uniffi_potty_bridge_fn_method_pottyclient_set_volume(void*_Nonnull ptr, uint16_t volume, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_STOP
@@ -622,6 +637,12 @@ void ffi_potty_bridge_rust_future_free_void(uint64_t handle
 void ffi_potty_bridge_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_ADVANCED_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_ADVANCED_SEARCH
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_advanced_search(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs(void
@@ -637,6 +658,12 @@ uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks(voi
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_USER_PLAYLISTS
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_VOLUME
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_VOLUME
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_volume(void
     
 );
 #endif
@@ -679,6 +706,12 @@ uint16_t uniffi_potty_bridge_checksum_method_pottyclient_seek(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_DELEGATE
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_set_delegate(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_VOLUME
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_SET_VOLUME
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_set_volume(void
     
 );
 #endif

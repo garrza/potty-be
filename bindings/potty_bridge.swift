@@ -478,6 +478,20 @@ fileprivate struct FfiConverterString: FfiConverter {
 public protocol PottyClientProtocol : AnyObject {
     
     /**
+     * Advanced search with filters and type selection
+     *
+     * # Arguments
+     * * `query` - The base search query string
+     * * `search_type` - Type of results to return (All, Track, Album, Artist)
+     * * `artist_filter` - Optional artist name filter
+     * * `album_filter` - Optional album name filter
+     * * `track_filter` - Optional track name filter
+     * * `limit` - Maximum number of results per type (max 50)
+     * * `offset` - The offset for pagination (0-based)
+     */
+    func advancedSearch(query: String, searchType: PottySearchType, artistFilter: String?, albumFilter: String?, trackFilter: String?, limit: UInt32, offset: UInt32) throws  -> PottySearchResults
+    
+    /**
      * Gets the user's liked/saved songs
      */
     func getLikedSongs() throws  -> [PottyTrack]
@@ -491,6 +505,11 @@ public protocol PottyClientProtocol : AnyObject {
      * Gets the user's playlists
      */
     func getUserPlaylists() throws  -> [PottyPlaylist]
+    
+    /**
+     * Gets the current playback volume (0-65535, where 65535 is 100%)
+     */
+    func getVolume() throws  -> UInt16
     
     /**
      * Authenticates with Spotify and initializes the session
@@ -513,9 +532,14 @@ public protocol PottyClientProtocol : AnyObject {
     func playUri(uri: String) throws 
     
     /**
-     * Searches for tracks on Spotify
+     * Searches for tracks on Spotify with pagination support
+     *
+     * # Arguments
+     * * `query` - The search query string
+     * * `limit` - Maximum number of results to return (max 50)
+     * * `offset` - The offset for pagination (0-based)
      */
-    func search(query: String) throws  -> [PottyTrack]
+    func search(query: String, limit: UInt32, offset: UInt32) throws  -> [PottyTrack]
     
     /**
      * Seeks to a position in the current track
@@ -526,6 +550,11 @@ public protocol PottyClientProtocol : AnyObject {
      * Sets the delegate for player events
      */
     func setDelegate(delegate: PottyDelegate) 
+    
+    /**
+     * Sets the playback volume (0-65535, where 65535 is 100%)
+     */
+    func setVolume(volume: UInt16) throws 
     
     /**
      * Stops playback
@@ -598,6 +627,32 @@ public convenience init() {
 
     
     /**
+     * Advanced search with filters and type selection
+     *
+     * # Arguments
+     * * `query` - The base search query string
+     * * `search_type` - Type of results to return (All, Track, Album, Artist)
+     * * `artist_filter` - Optional artist name filter
+     * * `album_filter` - Optional album name filter
+     * * `track_filter` - Optional track name filter
+     * * `limit` - Maximum number of results per type (max 50)
+     * * `offset` - The offset for pagination (0-based)
+     */
+open func advancedSearch(query: String, searchType: PottySearchType, artistFilter: String?, albumFilter: String?, trackFilter: String?, limit: UInt32, offset: UInt32)throws  -> PottySearchResults {
+    return try  FfiConverterTypePottySearchResults.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_advanced_search(self.uniffiClonePointer(),
+        FfiConverterString.lower(query),
+        FfiConverterTypePottySearchType.lower(searchType),
+        FfiConverterOptionString.lower(artistFilter),
+        FfiConverterOptionString.lower(albumFilter),
+        FfiConverterOptionString.lower(trackFilter),
+        FfiConverterUInt32.lower(limit),
+        FfiConverterUInt32.lower(offset),$0
+    )
+})
+}
+    
+    /**
      * Gets the user's liked/saved songs
      */
 open func getLikedSongs()throws  -> [PottyTrack] {
@@ -624,6 +679,16 @@ open func getPlaylistTracks(playlistId: String)throws  -> [PottyTrack] {
 open func getUserPlaylists()throws  -> [PottyPlaylist] {
     return try  FfiConverterSequenceTypePottyPlaylist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Gets the current playback volume (0-65535, where 65535 is 100%)
+     */
+open func getVolume()throws  -> UInt16 {
+    return try  FfiConverterUInt16.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_volume(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -667,12 +732,19 @@ open func playUri(uri: String)throws  {try rustCallWithError(FfiConverterTypePot
 }
     
     /**
-     * Searches for tracks on Spotify
+     * Searches for tracks on Spotify with pagination support
+     *
+     * # Arguments
+     * * `query` - The search query string
+     * * `limit` - Maximum number of results to return (max 50)
+     * * `offset` - The offset for pagination (0-based)
      */
-open func search(query: String)throws  -> [PottyTrack] {
+open func search(query: String, limit: UInt32, offset: UInt32)throws  -> [PottyTrack] {
     return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_search(self.uniffiClonePointer(),
-        FfiConverterString.lower(query),$0
+        FfiConverterString.lower(query),
+        FfiConverterUInt32.lower(limit),
+        FfiConverterUInt32.lower(offset),$0
     )
 })
 }
@@ -693,6 +765,16 @@ open func seek(positionMs: UInt32)throws  {try rustCallWithError(FfiConverterTyp
 open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
     uniffi_potty_bridge_fn_method_pottyclient_set_delegate(self.uniffiClonePointer(),
         FfiConverterCallbackInterfacePottyDelegate.lower(delegate),$0
+    )
+}
+}
+    
+    /**
+     * Sets the playback volume (0-65535, where 65535 is 100%)
+     */
+open func setVolume(volume: UInt16)throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_set_volume(self.uniffiClonePointer(),
+        FfiConverterUInt16.lower(volume),$0
     )
 }
 }
@@ -758,6 +840,216 @@ public func FfiConverterTypePottyClient_lift(_ pointer: UnsafeMutableRawPointer)
 #endif
 public func FfiConverterTypePottyClient_lower(_ value: PottyClient) -> UnsafeMutableRawPointer {
     return FfiConverterTypePottyClient.lower(value)
+}
+
+
+/**
+ * Represents a Spotify album with metadata
+ */
+public struct PottyAlbum {
+    public var id: String
+    public var name: String
+    public var artist: String
+    public var uri: String
+    public var releaseDate: String
+    public var totalTracks: UInt32
+    public var imageUrl: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, name: String, artist: String, uri: String, releaseDate: String, totalTracks: UInt32, imageUrl: String) {
+        self.id = id
+        self.name = name
+        self.artist = artist
+        self.uri = uri
+        self.releaseDate = releaseDate
+        self.totalTracks = totalTracks
+        self.imageUrl = imageUrl
+    }
+}
+
+
+
+extension PottyAlbum: Equatable, Hashable {
+    public static func ==(lhs: PottyAlbum, rhs: PottyAlbum) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.artist != rhs.artist {
+            return false
+        }
+        if lhs.uri != rhs.uri {
+            return false
+        }
+        if lhs.releaseDate != rhs.releaseDate {
+            return false
+        }
+        if lhs.totalTracks != rhs.totalTracks {
+            return false
+        }
+        if lhs.imageUrl != rhs.imageUrl {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(artist)
+        hasher.combine(uri)
+        hasher.combine(releaseDate)
+        hasher.combine(totalTracks)
+        hasher.combine(imageUrl)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottyAlbum: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottyAlbum {
+        return
+            try PottyAlbum(
+                id: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                artist: FfiConverterString.read(from: &buf), 
+                uri: FfiConverterString.read(from: &buf), 
+                releaseDate: FfiConverterString.read(from: &buf), 
+                totalTracks: FfiConverterUInt32.read(from: &buf), 
+                imageUrl: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PottyAlbum, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.artist, into: &buf)
+        FfiConverterString.write(value.uri, into: &buf)
+        FfiConverterString.write(value.releaseDate, into: &buf)
+        FfiConverterUInt32.write(value.totalTracks, into: &buf)
+        FfiConverterString.write(value.imageUrl, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyAlbum_lift(_ buf: RustBuffer) throws -> PottyAlbum {
+    return try FfiConverterTypePottyAlbum.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyAlbum_lower(_ value: PottyAlbum) -> RustBuffer {
+    return FfiConverterTypePottyAlbum.lower(value)
+}
+
+
+/**
+ * Represents a Spotify artist with metadata
+ */
+public struct PottyArtist {
+    public var id: String
+    public var name: String
+    public var uri: String
+    public var genres: [String]
+    public var imageUrl: String
+    public var followers: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, name: String, uri: String, genres: [String], imageUrl: String, followers: UInt32) {
+        self.id = id
+        self.name = name
+        self.uri = uri
+        self.genres = genres
+        self.imageUrl = imageUrl
+        self.followers = followers
+    }
+}
+
+
+
+extension PottyArtist: Equatable, Hashable {
+    public static func ==(lhs: PottyArtist, rhs: PottyArtist) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.uri != rhs.uri {
+            return false
+        }
+        if lhs.genres != rhs.genres {
+            return false
+        }
+        if lhs.imageUrl != rhs.imageUrl {
+            return false
+        }
+        if lhs.followers != rhs.followers {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(uri)
+        hasher.combine(genres)
+        hasher.combine(imageUrl)
+        hasher.combine(followers)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottyArtist: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottyArtist {
+        return
+            try PottyArtist(
+                id: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                uri: FfiConverterString.read(from: &buf), 
+                genres: FfiConverterSequenceString.read(from: &buf), 
+                imageUrl: FfiConverterString.read(from: &buf), 
+                followers: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PottyArtist, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.uri, into: &buf)
+        FfiConverterSequenceString.write(value.genres, into: &buf)
+        FfiConverterString.write(value.imageUrl, into: &buf)
+        FfiConverterUInt32.write(value.followers, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyArtist_lift(_ buf: RustBuffer) throws -> PottyArtist {
+    return try FfiConverterTypePottyArtist.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottyArtist_lower(_ value: PottyArtist) -> RustBuffer {
+    return FfiConverterTypePottyArtist.lower(value)
 }
 
 
@@ -859,6 +1151,83 @@ public func FfiConverterTypePottyPlaylist_lift(_ buf: RustBuffer) throws -> Pott
 #endif
 public func FfiConverterTypePottyPlaylist_lower(_ value: PottyPlaylist) -> RustBuffer {
     return FfiConverterTypePottyPlaylist.lower(value)
+}
+
+
+/**
+ * Unified search result
+ */
+public struct PottySearchResults {
+    public var tracks: [PottyTrack]
+    public var albums: [PottyAlbum]
+    public var artists: [PottyArtist]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(tracks: [PottyTrack], albums: [PottyAlbum], artists: [PottyArtist]) {
+        self.tracks = tracks
+        self.albums = albums
+        self.artists = artists
+    }
+}
+
+
+
+extension PottySearchResults: Equatable, Hashable {
+    public static func ==(lhs: PottySearchResults, rhs: PottySearchResults) -> Bool {
+        if lhs.tracks != rhs.tracks {
+            return false
+        }
+        if lhs.albums != rhs.albums {
+            return false
+        }
+        if lhs.artists != rhs.artists {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(tracks)
+        hasher.combine(albums)
+        hasher.combine(artists)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottySearchResults: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottySearchResults {
+        return
+            try PottySearchResults(
+                tracks: FfiConverterSequenceTypePottyTrack.read(from: &buf), 
+                albums: FfiConverterSequenceTypePottyAlbum.read(from: &buf), 
+                artists: FfiConverterSequenceTypePottyArtist.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PottySearchResults, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypePottyTrack.write(value.tracks, into: &buf)
+        FfiConverterSequenceTypePottyAlbum.write(value.albums, into: &buf)
+        FfiConverterSequenceTypePottyArtist.write(value.artists, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottySearchResults_lift(_ buf: RustBuffer) throws -> PottySearchResults {
+    return try FfiConverterTypePottySearchResults.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottySearchResults_lower(_ value: PottySearchResults) -> RustBuffer {
+    return FfiConverterTypePottySearchResults.lower(value)
 }
 
 
@@ -1156,6 +1525,87 @@ extension PottyPlayerEvent: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Search filter type
+ */
+
+public enum PottySearchType {
+    
+    case all
+    case track
+    case album
+    case artist
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePottySearchType: FfiConverterRustBuffer {
+    typealias SwiftType = PottySearchType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PottySearchType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .all
+        
+        case 2: return .track
+        
+        case 3: return .album
+        
+        case 4: return .artist
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: PottySearchType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .all:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .track:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .album:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .artist:
+            writeInt(&buf, Int32(4))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottySearchType_lift(_ buf: RustBuffer) throws -> PottySearchType {
+    return try FfiConverterTypePottySearchType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePottySearchType_lower(_ value: PottySearchType) -> RustBuffer {
+    return FfiConverterTypePottySearchType.lower(value)
+}
+
+
+
+extension PottySearchType: Equatable, Hashable {}
+
+
+
 
 
 
@@ -1267,6 +1717,105 @@ extension FfiConverterCallbackInterfacePottyDelegate : FfiConverter {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+    typealias SwiftType = String?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypePottyAlbum: FfiConverterRustBuffer {
+    typealias SwiftType = [PottyAlbum]
+
+    public static func write(_ value: [PottyAlbum], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePottyAlbum.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PottyAlbum] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PottyAlbum]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePottyAlbum.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypePottyArtist: FfiConverterRustBuffer {
+    typealias SwiftType = [PottyArtist]
+
+    public static func write(_ value: [PottyArtist], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePottyArtist.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PottyArtist] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PottyArtist]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePottyArtist.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePottyPlaylist: FfiConverterRustBuffer {
     typealias SwiftType = [PottyPlaylist]
 
@@ -1329,6 +1878,9 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_advanced_search() != 2335) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 59796) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1336,6 +1888,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 5371) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_volume() != 29931) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 52505) {
@@ -1350,13 +1905,16 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_play_uri() != 58318) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 61806) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 17927) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_seek() != 41630) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 12657) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_set_volume() != 3224) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_stop() != 39250) {

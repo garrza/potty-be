@@ -7,7 +7,10 @@ mod types;
 
 // Re-exports for UniFFI
 pub use error::PottyError;
-pub use types::{PottyDelegate, PottyPlayerEvent, PottyPlaylist, PottyTrack};
+pub use types::{
+    PottyAlbum, PottyArtist, PottyDelegate, PottyPlayerEvent, PottyPlaylist, PottySearchResults,
+    PottySearchType, PottyTrack,
+};
 
 use auth::AuthManager;
 use librespot_core::authentication::Credentials;
@@ -141,16 +144,72 @@ impl PottyClient {
         Ok(())
     }
     
+    /// Sets the playback volume (0-65535, where 65535 is 100%)
+    pub fn set_volume(&self, volume: u16) -> Result<(), PottyError> {
+        let player_guard = self.player.lock().unwrap();
+        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        player.set_volume(volume);
+        Ok(())
+    }
+    
+    /// Gets the current playback volume (0-65535, where 65535 is 100%)
+    pub fn get_volume(&self) -> Result<u16, PottyError> {
+        let player_guard = self.player.lock().unwrap();
+        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        Ok(player.get_volume())
+    }
+    
     // ========== Spotify Web API ==========
     
-    /// Searches for tracks on Spotify
-    pub fn search(&self, query: String) -> Result<Vec<PottyTrack>, PottyError> {
+    /// Searches for tracks on Spotify with pagination support
+    /// 
+    /// # Arguments
+    /// * `query` - The search query string
+    /// * `limit` - Maximum number of results to return (max 50)
+    /// * `offset` - The offset for pagination (0-based)
+    pub fn search(&self, query: String, limit: u32, offset: u32) -> Result<Vec<PottyTrack>, PottyError> {
         let _guard = self.runtime.enter();
         
         let api_guard = self.spotify_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
         
-        api.search(&query)
+        api.search(&query, limit, offset)
+    }
+    
+    /// Advanced search with filters and type selection
+    /// 
+    /// # Arguments
+    /// * `query` - The base search query string
+    /// * `search_type` - Type of results to return (All, Track, Album, Artist)
+    /// * `artist_filter` - Optional artist name filter
+    /// * `album_filter` - Optional album name filter
+    /// * `track_filter` - Optional track name filter
+    /// * `limit` - Maximum number of results per type (max 50)
+    /// * `offset` - The offset for pagination (0-based)
+    pub fn advanced_search(
+        &self,
+        query: String,
+        search_type: PottySearchType,
+        artist_filter: Option<String>,
+        album_filter: Option<String>,
+        track_filter: Option<String>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<PottySearchResults, PottyError> {
+        let _guard = self.runtime.enter();
+        
+        let api_guard = self.spotify_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        
+        api.advanced_search(
+            &query,
+            &search_type,
+            artist_filter.as_deref(),
+            album_filter.as_deref(),
+            track_filter.as_deref(),
+            limit,
+            offset,
+        )
     }
     
     /// Gets the user's liked/saved songs

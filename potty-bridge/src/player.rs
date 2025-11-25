@@ -14,6 +14,7 @@ const MAX_VOLUME: u16 = 65535;
 /// Manages Spotify playback using librespot
 pub struct PlayerManager {
     player: Arc<Player>,
+    mixer: Arc<dyn librespot_playback::mixer::Mixer>,
 }
 
 impl PlayerManager {
@@ -31,7 +32,7 @@ impl PlayerManager {
         
         let mixer = Self::create_mixer()?;
         
-        // Set volume to maximum (users control via macOS volume)
+        // Set initial volume to 100%
         mixer.set_volume(MAX_VOLUME);
         
         // Player::new already returns Arc<Player>
@@ -45,7 +46,10 @@ impl PlayerManager {
         // Spawn event loop on the runtime
         Self::spawn_event_loop(Arc::clone(&player), runtime, delegate);
         
-        Ok(Self { player })
+        Ok(Self { 
+            player,
+            mixer,
+        })
     }
     
     /// Creates and configures the audio mixer
@@ -124,5 +128,15 @@ impl PlayerManager {
     /// Seeks to a position in milliseconds
     pub fn seek(&self, position_ms: u32) {
         self.player.seek(position_ms);
+    }
+    
+    /// Sets the volume (0-65535, where 65535 is 100%)
+    pub fn set_volume(&self, volume: u16) {
+        self.mixer.set_volume(volume);
+    }
+    
+    /// Gets the current volume (0-65535)
+    pub fn get_volume(&self) -> u16 {
+        self.mixer.volume()
     }
 }
