@@ -284,7 +284,7 @@ void*_Nonnull uniffi_potty_bridge_fn_constructor_pottyclient_new(RustCallStatus 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_LOGIN
-uint64_t uniffi_potty_bridge_fn_method_pottyclient_login(void*_Nonnull ptr
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_login(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_PAUSE
@@ -304,7 +304,7 @@ void uniffi_potty_bridge_fn_method_pottyclient_play_uri(void*_Nonnull ptr, RustB
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SEARCH
-uint64_t uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_search(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_SET_DELEGATE

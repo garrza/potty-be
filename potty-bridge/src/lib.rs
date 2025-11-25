@@ -9,11 +9,12 @@ use librespot_playback::mixer::{self, MixerConfig};
 use librespot_playback::audio_backend;
 use uniffi;
 use thiserror::Error;
-use log::{info, error};
+use log::error;
 use rspotify::{AuthCodeSpotify, Token};
 use rspotify::prelude::*;
 use rspotify::model::{SearchType, SearchResult};
 use chrono::Duration as ChronoDuration;
+use tokio::runtime::Runtime;
 
 #[derive(Debug, Error, uniffi::Error)]
 pub enum PottyError {
@@ -50,6 +51,7 @@ pub trait PottyDelegate: Send + Sync {
 
 #[derive(uniffi::Object)]
 pub struct PottyClient {
+    runtime: Arc<Runtime>,
     session: Arc<Mutex<Option<Session>>>,
     player: Arc<Mutex<Option<Arc<Player>>>>,
     spotify_api: Arc<Mutex<Option<AuthCodeSpotify>>>,
@@ -62,7 +64,14 @@ impl PottyClient {
     pub fn new() -> Arc<Self> {
         let _ = env_logger::builder().try_init();
         
+        // Create a persistent Tokio runtime for all async operations
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create Tokio runtime");
+        
         Arc::new(Self {
+            runtime: Arc::new(runtime),
             session: Arc::new(Mutex::new(None)),
             player: Arc::new(Mutex::new(None)),
             spotify_api: Arc::new(Mutex::new(None)),
@@ -74,7 +83,10 @@ impl PottyClient {
         *self.delegate.lock().unwrap() = Some(delegate);
     }
 
-    pub async fn login(&self) -> Result<String, PottyError> {
+    pub fn login(&self) -> Result<String, PottyError> {
+        // Enter the runtime context for the entire operation
+        let _guard = self.runtime.enter();
+        
         let client_id = "65b708073fc0480ea92a077233ca87bd"; 
         
         let port = match TcpListener::bind("127.0.0.1:0") {
@@ -98,7 +110,8 @@ impl PottyClient {
             .build()
             .map_err(|e| PottyError::Generic(e.to_string()))?;
 
-        let oauth_token = client.get_access_token_async().await.map_err(|e| PottyError::Generic(e.to_string()))?;
+        // Use synchronous OAuth like ncspot does
+        let oauth_token = client.get_access_token().map_err(|e| PottyError::Generic(e.to_string()))?;
 
         let session_config = SessionConfig {
             client_id: client_id.to_string(),
@@ -108,7 +121,11 @@ impl PottyClient {
         let credentials = Credentials::with_access_token(&oauth_token.access_token);
         
         let session = Session::new(session_config, None);
-        session.connect(credentials, true).await.map_err(|e| PottyError::Generic(e.to_string()))?;
+        
+        // Run async connect within the runtime using block_on
+        self.runtime.block_on(async {
+            session.connect(credentials, true).await.map_err(|e| PottyError::Generic(e.to_string()))
+        })?;
         
         let player_config = PlayerConfig::default();
         let audio_format = AudioFormat::default();
@@ -130,43 +147,23 @@ impl PottyClient {
             move || backend(None, audio_format),
         );
 
-        // Start Event Loop
+        // Start Event Loop on our runtime
         let mut event_channel = player.get_player_event_channel();
-        
-        // We need to access the delegate in the loop.
-        // But we only have Box<dyn PottyDelegate>. Box is unique.
-        // We can't clone Box<dyn Trait>.
-        // This implies we cannot share the delegate easily if it's a Box.
-        // However, we CAN clone the foreign callback handle if UniFFI allows it?
-        // Usually callback interfaces are passed as `Box<dyn Trait>`.
-        
-        // If I need to share it (store it AND use it in thread), I probably need `Arc`.
-        // If UniFFI doesn't support `Arc` for callback interfaces, I'm stuck.
-        // BUT, `ncspot` doesn't use UniFFI.
-        
-        // Let's assume UniFFI supports `Box` and I can keep it in a Mutex.
-        // To use it in the loop, I have to lock the Mutex every time.
-        // `delegate_store` is `Arc<Mutex<Option<Box<dyn PottyDelegate>>>>`.
         let delegate_store = self.delegate.clone();
         
-        tokio::spawn(async move {
+        self.runtime.spawn(async move {
             while let Some(event) = event_channel.recv().await {
-                // We lock and use the delegate.
-                // We can't clone the delegate out of the lock if it's a Box.
-                // So we must keep the lock while using it.
-                {
-                    let guard = delegate_store.lock().unwrap();
-                    if let Some(delegate) = guard.as_ref() {
-                        let potty_event = match event {
-                            PlayerEvent::Playing { track_id, .. } => PottyPlayerEvent::Playing { track_id: track_id.to_uri() },
-                            PlayerEvent::Paused { track_id, .. } => PottyPlayerEvent::Paused { track_id: track_id.to_uri() },
-                            PlayerEvent::Stopped { track_id, .. } => PottyPlayerEvent::Stopped { track_id: track_id.to_uri() },
-                            PlayerEvent::EndOfTrack { track_id, .. } => PottyPlayerEvent::EndOfTrack { track_id: track_id.to_uri() },
-                            PlayerEvent::VolumeChanged { volume } => PottyPlayerEvent::VolumeChanged { volume },
-                            _ => PottyPlayerEvent::Unknown,
-                        };
-                        delegate.on_player_event(potty_event);
-                    }
+                let guard = delegate_store.lock().unwrap();
+                if let Some(delegate) = guard.as_ref() {
+                    let potty_event = match event {
+                        PlayerEvent::Playing { track_id, .. } => PottyPlayerEvent::Playing { track_id: track_id.to_uri() },
+                        PlayerEvent::Paused { track_id, .. } => PottyPlayerEvent::Paused { track_id: track_id.to_uri() },
+                        PlayerEvent::Stopped { track_id, .. } => PottyPlayerEvent::Stopped { track_id: track_id.to_uri() },
+                        PlayerEvent::EndOfTrack { track_id, .. } => PottyPlayerEvent::EndOfTrack { track_id: track_id.to_uri() },
+                        PlayerEvent::VolumeChanged { volume } => PottyPlayerEvent::VolumeChanged { volume },
+                        _ => PottyPlayerEvent::Unknown,
+                    };
+                    delegate.on_player_event(potty_event);
                 }
             }
         });
@@ -212,32 +209,38 @@ impl PottyClient {
         Ok(())
     }
 
-    pub async fn search(&self, query: String) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn search(&self, query: String) -> Result<Vec<PottyTrack>, PottyError> {
+        // Enter the runtime context
+        let _guard = self.runtime.enter();
+        
         // Get clone of API to use in async block
         let api = {
             let api_guard = self.spotify_api.lock().unwrap();
             api_guard.clone().ok_or(PottyError::NotConnected)?
         };
 
-        let result = api.search(&query, SearchType::Track, None, None, Some(20), None).await
-            .map_err(|e| PottyError::Generic(e.to_string()))?;
+        // Run search in runtime context using block_on
+        self.runtime.block_on(async move {
+            let result = api.search(&query, SearchType::Track, None, None, Some(20), None).await
+                .map_err(|e| PottyError::Generic(e.to_string()))?;
 
-        match result {
-            SearchResult::Tracks(page) => {
-                let tracks = page.items.into_iter().map(|t| {
-                    PottyTrack {
-                        id: t.id.map(|id| id.to_string()).unwrap_or_default(),
-                        name: t.name,
-                        artist: t.artists.first().map(|a| a.name.clone()).unwrap_or_default(),
-                        album: t.album.name,
-                        uri: t.external_urls.get("spotify").cloned().unwrap_or_default(),
-                        duration_ms: t.duration.num_milliseconds() as u32,
-                    }
-                }).collect();
-                Ok(tracks)
-            },
-            _ => Ok(vec![])
-        }
+            match result {
+                SearchResult::Tracks(page) => {
+                    let tracks = page.items.into_iter().map(|t| {
+                        PottyTrack {
+                            id: t.id.map(|id| id.to_string()).unwrap_or_default(),
+                            name: t.name,
+                            artist: t.artists.first().map(|a| a.name.clone()).unwrap_or_default(),
+                            album: t.album.name,
+                            uri: t.external_urls.get("spotify").cloned().unwrap_or_default(),
+                            duration_ms: t.duration.num_milliseconds() as u32,
+                        }
+                    }).collect();
+                    Ok(tracks)
+                },
+                _ => Ok(vec![])
+            }
+        })
     }
 }
 

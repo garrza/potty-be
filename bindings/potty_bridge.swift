@@ -474,7 +474,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public protocol PottyClientProtocol : AnyObject {
     
-    func login() async throws  -> String
+    func login() throws  -> String
     
     func pause() throws 
     
@@ -482,7 +482,7 @@ public protocol PottyClientProtocol : AnyObject {
     
     func playUri(uri: String) throws 
     
-    func search(query: String) async throws  -> [PottyTrack]
+    func search(query: String) throws  -> [PottyTrack]
     
     func setDelegate(delegate: PottyDelegate) 
     
@@ -545,21 +545,11 @@ public convenience init() {
     
 
     
-open func login()async throws  -> String {
-    return
-        try  await uniffiRustCallAsync(
-            rustFutureFunc: {
-                uniffi_potty_bridge_fn_method_pottyclient_login(
-                    self.uniffiClonePointer()
-                    
-                )
-            },
-            pollFunc: ffi_potty_bridge_rust_future_poll_rust_buffer,
-            completeFunc: ffi_potty_bridge_rust_future_complete_rust_buffer,
-            freeFunc: ffi_potty_bridge_rust_future_free_rust_buffer,
-            liftFunc: FfiConverterString.lift,
-            errorHandler: FfiConverterTypePottyError.lift
-        )
+open func login()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_login(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func pause()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
@@ -581,21 +571,12 @@ open func playUri(uri: String)throws  {try rustCallWithError(FfiConverterTypePot
 }
 }
     
-open func search(query: String)async throws  -> [PottyTrack] {
-    return
-        try  await uniffiRustCallAsync(
-            rustFutureFunc: {
-                uniffi_potty_bridge_fn_method_pottyclient_search(
-                    self.uniffiClonePointer(),
-                    FfiConverterString.lower(query)
-                )
-            },
-            pollFunc: ffi_potty_bridge_rust_future_poll_rust_buffer,
-            completeFunc: ffi_potty_bridge_rust_future_complete_rust_buffer,
-            freeFunc: ffi_potty_bridge_rust_future_free_rust_buffer,
-            liftFunc: FfiConverterSequenceTypePottyTrack.lift,
-            errorHandler: FfiConverterTypePottyError.lift
-        )
+open func search(query: String)throws  -> [PottyTrack] {
+    return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_search(self.uniffiClonePointer(),
+        FfiConverterString.lower(query),$0
+    )
+})
 }
     
 open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
@@ -1054,52 +1035,6 @@ fileprivate struct FfiConverterSequenceTypePottyTrack: FfiConverterRustBuffer {
         return seq
     }
 }
-private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
-private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
-
-fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
-
-fileprivate func uniffiRustCallAsync<F, T>(
-    rustFutureFunc: () -> UInt64,
-    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
-    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
-    freeFunc: (UInt64) -> (),
-    liftFunc: (F) throws -> T,
-    errorHandler: ((RustBuffer) throws -> Swift.Error)?
-) async throws -> T {
-    // Make sure to call uniffiEnsureInitialized() since future creation doesn't have a
-    // RustCallStatus param, so doesn't use makeRustCall()
-    uniffiEnsureInitialized()
-    let rustFuture = rustFutureFunc()
-    defer {
-        freeFunc(rustFuture)
-    }
-    var pollResult: Int8;
-    repeat {
-        pollResult = await withUnsafeContinuation {
-            pollFunc(
-                rustFuture,
-                uniffiFutureContinuationCallback,
-                uniffiContinuationHandleMap.insert(obj: $0)
-            )
-        }
-    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
-
-    return try liftFunc(makeRustCall(
-        { completeFunc(rustFuture, $0) },
-        errorHandler: errorHandler
-    ))
-}
-
-// Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
-// lift the return value or error and resume the suspended function.
-fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
-    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
-        continuation.resume(returning: pollResult)
-    } else {
-        print("uniffiFutureContinuationCallback invalid handle")
-    }
-}
 
 private enum InitializationResult {
     case ok
@@ -1116,7 +1051,7 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 56881) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 46425) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_pause() != 52584) {
@@ -1128,7 +1063,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_play_uri() != 49606) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 33131) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 30699) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 49108) {
