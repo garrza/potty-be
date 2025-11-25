@@ -472,32 +472,71 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
+/**
+ * Main client for the Potty Spotify bridge
+ */
 public protocol PottyClientProtocol : AnyObject {
     
+    /**
+     * Gets the user's liked/saved songs
+     */
     func getLikedSongs() throws  -> [PottyTrack]
     
+    /**
+     * Gets tracks from a specific playlist
+     */
     func getPlaylistTracks(playlistId: String) throws  -> [PottyTrack]
     
+    /**
+     * Gets the user's playlists
+     */
     func getUserPlaylists() throws  -> [PottyPlaylist]
     
+    /**
+     * Authenticates with Spotify and initializes the session
+     */
     func login() throws  -> String
     
+    /**
+     * Pauses playback
+     */
     func pause() throws 
     
+    /**
+     * Resumes playback
+     */
     func play() throws 
     
+    /**
+     * Plays a track by Spotify URI
+     */
     func playUri(uri: String) throws 
     
+    /**
+     * Searches for tracks on Spotify
+     */
     func search(query: String) throws  -> [PottyTrack]
     
+    /**
+     * Seeks to a position in the current track
+     */
     func seek(positionMs: UInt32) throws 
     
+    /**
+     * Sets the delegate for player events
+     */
     func setDelegate(delegate: PottyDelegate) 
     
+    /**
+     * Stops playback
+     */
     func stop() throws 
     
 }
 
+/**
+ * Main client for the Potty Spotify bridge
+ */
 open class PottyClient:
     PottyClientProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -535,6 +574,9 @@ open class PottyClient:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_potty_bridge_fn_clone_pottyclient(self.pointer, $0) }
     }
+    /**
+     * Creates a new PottyClient instance
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -555,6 +597,9 @@ public convenience init() {
     
 
     
+    /**
+     * Gets the user's liked/saved songs
+     */
 open func getLikedSongs()throws  -> [PottyTrack] {
     return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(self.uniffiClonePointer(),$0
@@ -562,6 +607,9 @@ open func getLikedSongs()throws  -> [PottyTrack] {
 })
 }
     
+    /**
+     * Gets tracks from a specific playlist
+     */
 open func getPlaylistTracks(playlistId: String)throws  -> [PottyTrack] {
     return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_playlist_tracks(self.uniffiClonePointer(),
@@ -570,6 +618,9 @@ open func getPlaylistTracks(playlistId: String)throws  -> [PottyTrack] {
 })
 }
     
+    /**
+     * Gets the user's playlists
+     */
 open func getUserPlaylists()throws  -> [PottyPlaylist] {
     return try  FfiConverterSequenceTypePottyPlaylist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_user_playlists(self.uniffiClonePointer(),$0
@@ -577,6 +628,9 @@ open func getUserPlaylists()throws  -> [PottyPlaylist] {
 })
 }
     
+    /**
+     * Authenticates with Spotify and initializes the session
+     */
 open func login()throws  -> String {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_login(self.uniffiClonePointer(),$0
@@ -584,18 +638,27 @@ open func login()throws  -> String {
 })
 }
     
+    /**
+     * Pauses playback
+     */
 open func pause()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_pause(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Resumes playback
+     */
 open func play()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_play(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Plays a track by Spotify URI
+     */
 open func playUri(uri: String)throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_play_uri(self.uniffiClonePointer(),
         FfiConverterString.lower(uri),$0
@@ -603,6 +666,9 @@ open func playUri(uri: String)throws  {try rustCallWithError(FfiConverterTypePot
 }
 }
     
+    /**
+     * Searches for tracks on Spotify
+     */
 open func search(query: String)throws  -> [PottyTrack] {
     return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_search(self.uniffiClonePointer(),
@@ -611,6 +677,9 @@ open func search(query: String)throws  -> [PottyTrack] {
 })
 }
     
+    /**
+     * Seeks to a position in the current track
+     */
 open func seek(positionMs: UInt32)throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_seek(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(positionMs),$0
@@ -618,6 +687,9 @@ open func seek(positionMs: UInt32)throws  {try rustCallWithError(FfiConverterTyp
 }
 }
     
+    /**
+     * Sets the delegate for player events
+     */
 open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
     uniffi_potty_bridge_fn_method_pottyclient_set_delegate(self.uniffiClonePointer(),
         FfiConverterCallbackInterfacePottyDelegate.lower(delegate),$0
@@ -625,6 +697,9 @@ open func setDelegate(delegate: PottyDelegate) {try! rustCall() {
 }
 }
     
+    /**
+     * Stops playback
+     */
 open func stop()throws  {try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_stop(self.uniffiClonePointer(),$0
     )
@@ -686,6 +761,9 @@ public func FfiConverterTypePottyClient_lower(_ value: PottyClient) -> UnsafeMut
 }
 
 
+/**
+ * Represents a Spotify playlist with metadata
+ */
 public struct PottyPlaylist {
     public var id: String
     public var name: String
@@ -784,6 +862,9 @@ public func FfiConverterTypePottyPlaylist_lower(_ value: PottyPlaylist) -> RustB
 }
 
 
+/**
+ * Represents a Spotify track with metadata
+ */
 public struct PottyTrack {
     public var id: String
     public var name: String
@@ -882,6 +963,9 @@ public func FfiConverterTypePottyTrack_lower(_ value: PottyTrack) -> RustBuffer 
 }
 
 
+/**
+ * Core error type for the Potty bridge
+ */
 public enum PottyError {
 
     
@@ -889,6 +973,10 @@ public enum PottyError {
     case Generic(String
     )
     case NotConnected
+    case AuthenticationFailed(String
+    )
+    case PlaybackError(String
+    )
 }
 
 
@@ -909,6 +997,12 @@ public struct FfiConverterTypePottyError: FfiConverterRustBuffer {
             try FfiConverterString.read(from: &buf)
             )
         case 2: return .NotConnected
+        case 3: return .AuthenticationFailed(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 4: return .PlaybackError(
+            try FfiConverterString.read(from: &buf)
+            )
 
          default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -929,6 +1023,16 @@ public struct FfiConverterTypePottyError: FfiConverterRustBuffer {
         case .NotConnected:
             writeInt(&buf, Int32(2))
         
+        
+        case let .AuthenticationFailed(v1):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case let .PlaybackError(v1):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(v1, into: &buf)
+            
         }
     }
 }
@@ -944,6 +1048,9 @@ extension PottyError: Foundation.LocalizedError {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Player events that can be sent to the Swift UI
+ */
 
 public enum PottyPlayerEvent {
     
@@ -1052,6 +1159,9 @@ extension PottyPlayerEvent: Equatable, Hashable {}
 
 
 
+/**
+ * Callback interface for player events
+ */
 public protocol PottyDelegate : AnyObject {
     
     func onPlayerEvent(event: PottyPlayerEvent) 
@@ -1219,40 +1329,40 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 2894) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 59796) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 4576) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 7230) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 38305) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 5371) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 46425) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_login() != 52505) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_pause() != 52584) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_pause() != 62593) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_play() != 14965) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_play() != 16500) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_play_uri() != 49606) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_play_uri() != 58318) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 30699) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_search() != 61806) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_seek() != 23239) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_seek() != 41630) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 49108) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_set_delegate() != 12657) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_stop() != 60520) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_stop() != 39250) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_constructor_pottyclient_new() != 38334) {
+    if (uniffi_potty_bridge_checksum_constructor_pottyclient_new() != 41625) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottydelegate_on_player_event() != 49082) {
