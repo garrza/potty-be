@@ -492,9 +492,14 @@ public protocol PottyClientProtocol : AnyObject {
     func advancedSearch(query: String, searchType: PottySearchType, artistFilter: String?, albumFilter: String?, trackFilter: String?, limit: UInt32, offset: UInt32) throws  -> PottySearchResults
     
     /**
-     * Gets the user's liked/saved songs
+     * Gets the user's liked/saved songs (first page)
      */
     func getLikedSongs() throws  -> [PottyTrack]
+    
+    /**
+     * Gets liked songs with pagination
+     */
+    func getLikedSongsPaginated(offset: UInt32, limit: UInt32) throws  -> [PottyTrack]
     
     /**
      * Gets tracks from a specific playlist
@@ -512,9 +517,14 @@ public protocol PottyClientProtocol : AnyObject {
     func getUserPlaylists() throws  -> [PottyPlaylist]
     
     /**
-     * Gets the user's saved albums
+     * Gets the user's saved albums (first page)
      */
     func getUserSavedAlbums() throws  -> [PottyAlbum]
+    
+    /**
+     * Gets saved albums with pagination
+     */
+    func getUserSavedAlbumsPaginated(offset: UInt32, limit: UInt32) throws  -> [PottyAlbum]
     
     /**
      * Gets the current playback volume (0-65535, where 65535 is 100%)
@@ -663,11 +673,23 @@ open func advancedSearch(query: String, searchType: PottySearchType, artistFilte
 }
     
     /**
-     * Gets the user's liked/saved songs
+     * Gets the user's liked/saved songs (first page)
      */
 open func getLikedSongs()throws  -> [PottyTrack] {
     return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Gets liked songs with pagination
+     */
+open func getLikedSongsPaginated(offset: UInt32, limit: UInt32)throws  -> [PottyTrack] {
+    return try  FfiConverterSequenceTypePottyTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs_paginated(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(offset),
+        FfiConverterUInt32.lower(limit),$0
     )
 })
 }
@@ -704,11 +726,23 @@ open func getUserPlaylists()throws  -> [PottyPlaylist] {
 }
     
     /**
-     * Gets the user's saved albums
+     * Gets the user's saved albums (first page)
      */
 open func getUserSavedAlbums()throws  -> [PottyAlbum] {
     return try  FfiConverterSequenceTypePottyAlbum.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_user_saved_albums(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Gets saved albums with pagination
+     */
+open func getUserSavedAlbumsPaginated(offset: UInt32, limit: UInt32)throws  -> [PottyAlbum] {
+    return try  FfiConverterSequenceTypePottyAlbum.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_user_saved_albums_paginated(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(offset),
+        FfiConverterUInt32.lower(limit),$0
     )
 })
 }
@@ -1919,7 +1953,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_advanced_search() != 2335) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 59796) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 40976) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs_paginated() != 53895) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 7230) {
@@ -1931,7 +1968,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_playlists() != 5371) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_saved_albums() != 58112) {
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_saved_albums() != 39417) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_saved_albums_paginated() != 52585) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_volume() != 29931) {

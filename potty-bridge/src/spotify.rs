@@ -69,13 +69,19 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Gets the user's liked/saved tracks
+    /// Gets the user's liked/saved tracks (first page only, use offset for pagination)
     pub fn get_liked_songs(&self) -> Result<Vec<PottyTrack>, PottyError> {
+        self.get_liked_songs_paginated(0, DEFAULT_LIMIT)
+    }
+    
+    /// Gets liked songs with pagination support
+    pub fn get_liked_songs_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
         let api = self.api.clone();
+        let limit = limit.min(DEFAULT_LIMIT);
         
         self.runtime.block_on(async move {
             let result = api
-                .current_user_saved_tracks_manual(Some(Market::FromToken), Some(DEFAULT_LIMIT), None)
+                .current_user_saved_tracks_manual(Some(Market::FromToken), Some(limit), Some(offset))
                 .await
                 .map_err(PottyError::from_error)?;
             
@@ -89,13 +95,19 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Gets the user's saved albums
+    /// Gets the user's saved albums (first page only, use offset for pagination)
     pub fn get_user_saved_albums(&self) -> Result<Vec<PottyAlbum>, PottyError> {
+        self.get_user_saved_albums_paginated(0, DEFAULT_LIMIT)
+    }
+    
+    /// Gets saved albums with pagination support
+    pub fn get_user_saved_albums_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
         let api = self.api.clone();
+        let limit = limit.min(DEFAULT_LIMIT);
         
         self.runtime.block_on(async move {
             let result = api
-                .current_user_saved_albums_manual(Some(Market::FromToken), Some(DEFAULT_LIMIT), None)
+                .current_user_saved_albums_manual(Some(Market::FromToken), Some(limit), Some(offset))
                 .await
                 .map_err(PottyError::from_error)?;
             
@@ -109,7 +121,7 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Gets the user's followed artists
+    /// Gets the user's followed artists (first page only)
     pub fn get_user_followed_artists(&self) -> Result<Vec<PottyArtist>, PottyError> {
         let api = self.api.clone();
         
