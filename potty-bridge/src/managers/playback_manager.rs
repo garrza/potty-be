@@ -1,10 +1,10 @@
 use crate::error::PottyError;
-use crate::types::{PottyDelegate, PottyPlayerEvent};
+use crate::domain::{PlayerDelegate, PlayerEvent};
 use librespot_core::{Session, SpotifyUri};
 use librespot_playback::audio_backend;
 use librespot_playback::config::{AudioFormat, PlayerConfig};
 use librespot_playback::mixer::{self, MixerConfig};
-use librespot_playback::player::{Player, PlayerEvent};
+use librespot_playback::player::{Player, PlayerEvent as LibrespotPlayerEvent};
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
@@ -12,17 +12,17 @@ use tokio::runtime::Runtime;
 const MAX_VOLUME: u16 = 65535;
 
 /// Manages Spotify playback using librespot
-pub struct PlayerManager {
+pub struct PlaybackManager {
     player: Arc<Player>,
     mixer: Arc<dyn librespot_playback::mixer::Mixer>,
 }
 
-impl PlayerManager {
+impl PlaybackManager {
     /// Creates a new player manager with the given session
     pub fn new(
         session: Session,
         runtime: Arc<Runtime>,
-        delegate: Arc<Mutex<Option<Box<dyn PottyDelegate>>>>,
+        delegate: Arc<Mutex<Option<Box<dyn PlayerDelegate>>>>,
     ) -> Result<Self, PottyError> {
         let player_config = PlayerConfig::default();
         let audio_format = AudioFormat::default();
@@ -65,7 +65,7 @@ impl PlayerManager {
     fn spawn_event_loop(
         player: Arc<Player>,
         runtime: Arc<Runtime>,
-        delegate: Arc<Mutex<Option<Box<dyn PottyDelegate>>>>,
+        delegate: Arc<Mutex<Option<Box<dyn PlayerDelegate>>>>,
     ) {
         let mut event_channel = player.get_player_event_channel();
         
@@ -80,24 +80,24 @@ impl PlayerManager {
     }
     
     /// Converts librespot PlayerEvent to PottyPlayerEvent
-    fn convert_player_event(event: PlayerEvent) -> PottyPlayerEvent {
+    fn convert_player_event(event: LibrespotPlayerEvent) -> PlayerEvent {
         match event {
-            PlayerEvent::Playing { track_id, .. } => {
-                PottyPlayerEvent::Playing { track_id: track_id.to_uri() }
+            LibrespotPlayerEvent::Playing { track_id, .. } => {
+                    PlayerEvent::Playing { track_id: track_id.to_uri() }
             }
-            PlayerEvent::Paused { track_id, .. } => {
-                PottyPlayerEvent::Paused { track_id: track_id.to_uri() }
+            LibrespotPlayerEvent::Paused { track_id, .. } => {
+                    PlayerEvent::Paused { track_id: track_id.to_uri() }
             }
-            PlayerEvent::Stopped { track_id, .. } => {
-                PottyPlayerEvent::Stopped { track_id: track_id.to_uri() }
+            LibrespotPlayerEvent::Stopped { track_id, .. } => {
+                    PlayerEvent::Stopped { track_id: track_id.to_uri() }
             }
-            PlayerEvent::EndOfTrack { track_id, .. } => {
-                PottyPlayerEvent::EndOfTrack { track_id: track_id.to_uri() }
+            LibrespotPlayerEvent::EndOfTrack { track_id, .. } => {
+                    PlayerEvent::EndOfTrack { track_id: track_id.to_uri() }
             }
-            PlayerEvent::VolumeChanged { volume } => {
-                PottyPlayerEvent::VolumeChanged { volume }
+            LibrespotPlayerEvent::VolumeChanged { volume } => {
+                    PlayerEvent::VolumeChanged { volume }
             }
-            _ => PottyPlayerEvent::Unknown,
+            _ => PlayerEvent::Unknown,
         }
     }
     

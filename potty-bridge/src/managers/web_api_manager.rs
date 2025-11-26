@@ -1,7 +1,8 @@
 use crate::error::PottyError;
-use crate::types::{PottyAlbum, PottyArtist, PottyPlaylist, PottySearchResults, PottySearchType, PottyTrack};
+use crate::domain::{Album, Artist, Playlist, SearchResults, Track};
+use crate::domain::SearchType as PottySearchType;
 use chrono::Duration as ChronoDuration;
-use rspotify::model::{Market, PlayableItem, SearchResult, SearchType};
+use rspotify::model::{Market, PlayableItem, SearchResult, SearchType as RspotifySearchType};
 use rspotify::prelude::*;
 use rspotify::{AuthCodeSpotify, Token};
 use std::collections::HashSet;
@@ -15,12 +16,12 @@ const DEFAULT_LIMIT: u32 = 50;
 const MAX_SEARCH_LIMIT: u32 = 50;
 
 /// Manages Spotify Web API interactions
-pub struct SpotifyApiManager {
+pub struct WebApiManager {
     api: AuthCodeSpotify,
     runtime: std::sync::Arc<Runtime>,
 }
 
-impl SpotifyApiManager {
+impl WebApiManager {
     /// Creates a new Spotify API manager with the given token
     pub fn new(
         access_token: String,
@@ -42,7 +43,7 @@ impl SpotifyApiManager {
     }
     
     /// Searches for tracks on Spotify with pagination support
-    pub fn search(&self, query: &str, limit: u32, offset: u32) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn search(&self, query: &str, limit: u32, offset: u32) -> Result<Vec<Track>, PottyError> {
         let api = self.api.clone();
         let query = query.to_string();
         
@@ -51,7 +52,7 @@ impl SpotifyApiManager {
         
         self.runtime.block_on(async move {
             let result = api
-                .search(&query, SearchType::Track, None, None, Some(limit), Some(offset))
+                .search(&query, RspotifySearchType::Track, None, None, Some(limit), Some(offset))
                 .await
                 .map_err(PottyError::from_error)?;
             
@@ -74,7 +75,7 @@ impl SpotifyApiManager {
     /// # Arguments
     /// * `offset` - The offset for pagination (default: 0)
     /// * `limit` - Maximum number of results to return (default: 50, max: 50)
-    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<Track>, PottyError> {
         let api = self.api.clone();
         let limit = limit.min(DEFAULT_LIMIT);
         
@@ -99,7 +100,7 @@ impl SpotifyApiManager {
     /// # Arguments
     /// * `offset` - The offset for pagination (default: 0)
     /// * `limit` - Maximum number of results to return (default: 50, max: 50)
-    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
+    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<Album>, PottyError> {
         let api = self.api.clone();
         let limit = limit.min(DEFAULT_LIMIT);
         
@@ -120,7 +121,7 @@ impl SpotifyApiManager {
     }
     
     /// Gets the user's followed artists (first page only)
-    pub fn get_user_followed_artists(&self) -> Result<Vec<PottyArtist>, PottyError> {
+    pub fn get_user_followed_artists(&self) -> Result<Vec<Artist>, PottyError> {
         let api = self.api.clone();
         
         self.runtime.block_on(async move {
@@ -140,7 +141,7 @@ impl SpotifyApiManager {
     }
     
     /// Gets the user's playlists
-    pub fn get_user_playlists(&self) -> Result<Vec<PottyPlaylist>, PottyError> {
+    pub fn get_user_playlists(&self) -> Result<Vec<Playlist>, PottyError> {
         let api = self.api.clone();
         
         self.runtime.block_on(async move {
@@ -160,7 +161,7 @@ impl SpotifyApiManager {
                         .map(|img| img.url.clone())
                         .unwrap_or_default();
                     
-                    PottyPlaylist {
+                    Playlist {
                         id: pl.id.id().to_string(),
                         name: pl.name,
                         description: String::new(),
@@ -176,7 +177,7 @@ impl SpotifyApiManager {
     }
     
     /// Gets tracks from a specific playlist
-    pub fn get_playlist_tracks(&self, playlist_id: &str) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn get_playlist_tracks(&self, playlist_id: &str) -> Result<Vec<Track>, PottyError> {
         let api = self.api.clone();
         let playlist_id = playlist_id.to_string();
         
@@ -211,7 +212,7 @@ impl SpotifyApiManager {
         track_filter: Option<&str>,
         limit: u32,
         offset: u32,
-    ) -> Result<PottySearchResults, PottyError> {
+    ) -> Result<SearchResults, PottyError> {
         let api = self.api.clone();
         
         // Build query with filters
@@ -241,7 +242,7 @@ impl SpotifyApiManager {
         
         let final_query = query_parts.join(" ");
         if final_query.is_empty() {
-            return Ok(PottySearchResults {
+            return Ok(SearchResults {
                 tracks: vec![],
                 albums: vec![],
                 artists: vec![],
@@ -251,7 +252,7 @@ impl SpotifyApiManager {
         let limit = limit.min(MAX_SEARCH_LIMIT);
         
         self.runtime.block_on(async move {
-            let mut results = PottySearchResults {
+            let mut results = SearchResults {
                 tracks: vec![],
                 albums: vec![],
                 artists: vec![],
@@ -265,7 +266,7 @@ impl SpotifyApiManager {
             // Search tracks
             if search_tracks {
                 let result = api
-                    .search(&final_query, SearchType::Track, None, None, Some(limit), Some(offset))
+                    .search(&final_query, RspotifySearchType::Track, None, None, Some(limit), Some(offset))
                     .await
                     .map_err(PottyError::from_error)?;
                 
@@ -281,7 +282,7 @@ impl SpotifyApiManager {
             // Search albums
             if search_albums {
                 let result = api
-                    .search(&final_query, SearchType::Album, None, None, Some(limit), Some(offset))
+                    .search(&final_query, RspotifySearchType::Album, None, None, Some(limit), Some(offset))
                     .await
                     .map_err(PottyError::from_error)?;
                 
@@ -297,7 +298,7 @@ impl SpotifyApiManager {
             // Search artists
             if search_artists {
                 let result = api
-                    .search(&final_query, SearchType::Artist, None, None, Some(limit), Some(offset))
+                    .search(&final_query, RspotifySearchType::Artist, None, None, Some(limit), Some(offset))
                     .await
                     .map_err(PottyError::from_error)?;
                 
@@ -314,8 +315,8 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Converts an rspotify FullTrack to PottyTrack
-    fn track_to_potty_track(track: rspotify::model::FullTrack) -> PottyTrack {
+    /// Converts an rspotify FullTrack to Track
+    fn track_to_potty_track(track: rspotify::model::FullTrack) -> Track {
         let uri = track
             .id
             .as_ref()
@@ -329,7 +330,7 @@ impl SpotifyApiManager {
             .map(|img| img.url.clone())
             .unwrap_or_default();
         
-        PottyTrack {
+        Track {
             id: track.id.map(|id| id.to_string()).unwrap_or_default(),
             name: track.name,
             artist: track
@@ -344,8 +345,8 @@ impl SpotifyApiManager {
         }
     }
     
-    /// Converts an rspotify SimplifiedAlbum to PottyAlbum
-    fn album_to_potty_album(album: rspotify::model::SimplifiedAlbum) -> PottyAlbum {
+    /// Converts an rspotify SimplifiedAlbum to Album
+    fn album_to_potty_album(album: rspotify::model::SimplifiedAlbum) -> Album {
         let uri = album
             .id
             .as_ref()
@@ -358,7 +359,7 @@ impl SpotifyApiManager {
             .map(|img| img.url.clone())
             .unwrap_or_default();
         
-        PottyAlbum {
+        Album {
             id: album.id.map(|id| id.to_string()).unwrap_or_default(),
             name: album.name,
             artist: album
@@ -373,8 +374,8 @@ impl SpotifyApiManager {
         }
     }
     
-    /// Converts an rspotify FullAlbum to PottyAlbum
-    fn full_album_to_potty_album(album: rspotify::model::FullAlbum) -> PottyAlbum {
+    /// Converts an rspotify FullAlbum to Album
+    fn full_album_to_potty_album(album: rspotify::model::FullAlbum) -> Album {
         let uri = format!("spotify:album:{}", album.id.id());
         
         let image_url = album
@@ -383,7 +384,7 @@ impl SpotifyApiManager {
             .map(|img| img.url.clone())
             .unwrap_or_default();
         
-        PottyAlbum {
+        Album {
             id: album.id.to_string(),
             name: album.name,
             artist: album
@@ -398,8 +399,8 @@ impl SpotifyApiManager {
         }
     }
     
-    /// Converts an rspotify FullArtist to PottyArtist
-    fn artist_to_potty_artist(artist: rspotify::model::FullArtist) -> PottyArtist {
+    /// Converts an rspotify FullArtist to Artist
+    fn artist_to_potty_artist(artist: rspotify::model::FullArtist) -> Artist {
         let uri = format!("spotify:artist:{}", artist.id.id());
         
         let image_url = artist
@@ -408,7 +409,7 @@ impl SpotifyApiManager {
             .map(|img| img.url.clone())
             .unwrap_or_default();
         
-        PottyArtist {
+        Artist {
             id: artist.id.to_string(),
             name: artist.name,
             uri,

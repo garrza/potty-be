@@ -251,19 +251,19 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_POTTY_DELEGATE_METHOD0
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_POTTY_DELEGATE_METHOD0
-typedef void (*UniffiCallbackInterfacePottyDelegateMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_PLAYER_DELEGATE_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_PLAYER_DELEGATE_METHOD0
+typedef void (*UniffiCallbackInterfacePlayerDelegateMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
         RustCallStatus *_Nonnull uniffiCallStatus
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_POTTY_DELEGATE
-#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_POTTY_DELEGATE
-typedef struct UniffiVTableCallbackInterfacePottyDelegate {
-    UniffiCallbackInterfacePottyDelegateMethod0 _Nonnull onPlayerEvent;
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_PLAYER_DELEGATE
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_PLAYER_DELEGATE
+typedef struct UniffiVTableCallbackInterfacePlayerDelegate {
+    UniffiCallbackInterfacePlayerDelegateMethod0 _Nonnull onPlayerEvent;
     UniffiCallbackInterfaceFree _Nonnull uniffiFree;
-} UniffiVTableCallbackInterfacePottyDelegate;
+} UniffiVTableCallbackInterfacePlayerDelegate;
 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_CLONE_POTTYCLIENT
@@ -285,6 +285,16 @@ void*_Nonnull uniffi_potty_bridge_fn_constructor_pottyclient_new(RustCallStatus 
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_ADVANCED_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_ADVANCED_SEARCH
 RustBuffer uniffi_potty_bridge_fn_method_pottyclient_advanced_search(void*_Nonnull ptr, RustBuffer query, RustBuffer search_type, RustBuffer artist_filter, RustBuffer album_filter, RustBuffer track_filter, uint32_t limit, uint32_t offset, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_ALBUM_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_ALBUM_METADATA
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_album_metadata(void*_Nonnull ptr, RustBuffer album_uri, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_ARTIST_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_ARTIST_METADATA
+RustBuffer uniffi_potty_bridge_fn_method_pottyclient_get_artist_metadata(void*_Nonnull ptr, RustBuffer artist_uri, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_METHOD_POTTYCLIENT_GET_LIKED_SONGS
@@ -362,9 +372,9 @@ void uniffi_potty_bridge_fn_method_pottyclient_set_volume(void*_Nonnull ptr, uin
 void uniffi_potty_bridge_fn_method_pottyclient_stop(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_POTTYDELEGATE
-#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_POTTYDELEGATE
-void uniffi_potty_bridge_fn_init_callback_vtable_pottydelegate(UniffiVTableCallbackInterfacePottyDelegate* _Nonnull vtable
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_PLAYERDELEGATE
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_FN_INIT_CALLBACK_VTABLE_PLAYERDELEGATE
+void uniffi_potty_bridge_fn_init_callback_vtable_playerdelegate(UniffiVTableCallbackInterfacePlayerDelegate* _Nonnull vtable
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_POTTY_BRIDGE_RUSTBUFFER_ALLOC
@@ -653,6 +663,18 @@ uint16_t uniffi_potty_bridge_checksum_method_pottyclient_advanced_search(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_ALBUM_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_ALBUM_METADATA
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_album_metadata(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_ARTIST_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_ARTIST_METADATA
+uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_artist_metadata(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 #define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYCLIENT_GET_LIKED_SONGS
 uint16_t uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs(void
@@ -749,9 +771,9 @@ uint16_t uniffi_potty_bridge_checksum_constructor_pottyclient_new(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYDELEGATE_ON_PLAYER_EVENT
-#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_POTTYDELEGATE_ON_PLAYER_EVENT
-uint16_t uniffi_potty_bridge_checksum_method_pottydelegate_on_player_event(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_PLAYERDELEGATE_ON_PLAYER_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_POTTY_BRIDGE_CHECKSUM_METHOD_PLAYERDELEGATE_ON_PLAYER_EVENT
+uint16_t uniffi_potty_bridge_checksum_method_playerdelegate_on_player_event(void
     
 );
 #endif

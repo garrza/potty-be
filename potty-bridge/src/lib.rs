@@ -1,33 +1,29 @@
-// Module declarations
-mod auth;
+// Module declarations - clean, organized structure
+mod domain;
+mod managers;
 mod error;
-mod player;
-mod spotify;
-mod types;
 
-// Re-exports for UniFFI
+// Re-exports for UniFFI - domain types only
+pub use domain::*;
 pub use error::PottyError;
-pub use types::{
-    PottyAlbum, PottyArtist, PottyDelegate, PottyPlayerEvent, PottyPlaylist, PottySearchResults,
-    PottySearchType, PottyTrack,
-};
 
-use auth::AuthManager;
+use managers::{AuthManager, MetadataManager, PlaybackManager, WebApiManager};
 use librespot_core::authentication::Credentials;
 use librespot_core::{Session, SessionConfig};
-use player::PlayerManager;
-use spotify::SpotifyApiManager;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
 /// Main client for the Potty Spotify bridge
+/// 
+/// This is a thin facade that delegates to specialized managers
 #[derive(uniffi::Object)]
 pub struct PottyClient {
     runtime: Arc<Runtime>,
     session: Arc<Mutex<Option<Session>>>,
-    player: Arc<Mutex<Option<PlayerManager>>>,
-    spotify_api: Arc<Mutex<Option<SpotifyApiManager>>>,
-    delegate: Arc<Mutex<Option<Box<dyn PottyDelegate>>>>,
+    playback: Arc<Mutex<Option<PlaybackManager>>>,
+    web_api: Arc<Mutex<Option<WebApiManager>>>,
+    metadata: Arc<Mutex<Option<MetadataManager>>>,
+    delegate: Arc<Mutex<Option<Box<dyn PlayerDelegate>>>>,
 }
 
 #[uniffi::export]
@@ -37,7 +33,6 @@ impl PottyClient {
     pub fn new() -> Arc<Self> {
         let _ = env_logger::builder().try_init();
         
-        // Create a persistent Tokio runtime for all async operations
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
@@ -46,14 +41,15 @@ impl PottyClient {
         Arc::new(Self {
             runtime: Arc::new(runtime),
             session: Arc::new(Mutex::new(None)),
-            player: Arc::new(Mutex::new(None)),
-            spotify_api: Arc::new(Mutex::new(None)),
+            playback: Arc::new(Mutex::new(None)),
+            web_api: Arc::new(Mutex::new(None)),
+            metadata: Arc::new(Mutex::new(None)),
             delegate: Arc::new(Mutex::new(None)),
         })
     }
     
     /// Sets the delegate for player events
-    pub fn set_delegate(&self, delegate: Box<dyn PottyDelegate>) {
+    pub fn set_delegate(&self, delegate: Box<dyn PlayerDelegate>) {
         *self.delegate.lock().unwrap() = Some(delegate);
     }
     
@@ -61,10 +57,8 @@ impl PottyClient {
     pub fn login(&self) -> Result<String, PottyError> {
         let _guard = self.runtime.enter();
         
-        // Authenticate via OAuth
         let oauth_token = AuthManager::authenticate()?;
         
-        // Create and connect librespot session
         let session_config = SessionConfig {
             client_id: AuthManager::client_id().to_string(),
             ..Default::default()
@@ -80,127 +74,105 @@ impl PottyClient {
                 .map_err(|e| PottyError::AuthenticationFailed(e.to_string()))
         })?;
         
-        // Initialize player
-        let player = PlayerManager::new(
+        // Initialize managers
+        let playback = PlaybackManager::new(
             session.clone(),
             self.runtime.clone(),
             self.delegate.clone(),
         )?;
         
-        // Initialize Spotify Web API
-        let spotify_api = SpotifyApiManager::new(
+        let web_api = WebApiManager::new(
             oauth_token.access_token.clone(),
             oauth_token.refresh_token.clone(),
             AuthManager::scopes(),
             self.runtime.clone(),
         );
         
+        let metadata = MetadataManager::new(
+            session.clone(),
+            self.runtime.clone(),
+        );
+        
         // Store instances
         *self.session.lock().unwrap() = Some(session);
-        *self.player.lock().unwrap() = Some(player);
-        *self.spotify_api.lock().unwrap() = Some(spotify_api);
+        *self.playback.lock().unwrap() = Some(playback);
+        *self.web_api.lock().unwrap() = Some(web_api);
+        *self.metadata.lock().unwrap() = Some(metadata);
         
         Ok(oauth_token.access_token)
     }
     
     // ========== Playback Controls ==========
     
-    /// Plays a track by Spotify URI
     pub fn play_uri(&self, uri: String) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.play_uri(&uri)
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.play_uri(&uri)
     }
     
-    /// Pauses playback
     pub fn pause(&self) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.pause();
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.pause();
         Ok(())
     }
     
-    /// Resumes playback
     pub fn play(&self) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.play();
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.play();
         Ok(())
     }
     
-    /// Stops playback
     pub fn stop(&self) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.stop();
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.stop();
         Ok(())
     }
     
-    /// Seeks to a position in the current track
     pub fn seek(&self, position_ms: u32) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.seek(position_ms);
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.seek(position_ms);
         Ok(())
     }
     
-    /// Sets the playback volume (0-65535, where 65535 is 100%)
     pub fn set_volume(&self, volume: u16) -> Result<(), PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        player.set_volume(volume);
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        mgr.set_volume(volume);
         Ok(())
     }
     
-    /// Gets the current playback volume (0-65535, where 65535 is 100%)
     pub fn get_volume(&self) -> Result<u16, PottyError> {
-        let player_guard = self.player.lock().unwrap();
-        let player = player_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        Ok(player.get_volume())
+        let guard = self.playback.lock().unwrap();
+        let mgr = guard.as_ref().ok_or(PottyError::NotConnected)?;
+        Ok(mgr.get_volume())
     }
     
     // ========== Spotify Web API ==========
     
-    /// Searches for tracks on Spotify with pagination support
-    /// 
-    /// # Arguments
-    /// * `query` - The search query string
-    /// * `limit` - Maximum number of results to return (max 50)
-    /// * `offset` - The offset for pagination (0-based)
-    pub fn search(&self, query: String, limit: u32, offset: u32) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn search(&self, query: String, limit: u32, offset: u32) -> Result<Vec<Track>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.search(&query, limit, offset)
     }
     
-    /// Advanced search with filters and type selection
-    /// 
-    /// # Arguments
-    /// * `query` - The base search query string
-    /// * `search_type` - Type of results to return (All, Track, Album, Artist)
-    /// * `artist_filter` - Optional artist name filter
-    /// * `album_filter` - Optional album name filter
-    /// * `track_filter` - Optional track name filter
-    /// * `limit` - Maximum number of results per type (max 50)
-    /// * `offset` - The offset for pagination (0-based)
     pub fn advanced_search(
         &self,
         query: String,
-        search_type: PottySearchType,
+        search_type: SearchType,
         artist_filter: Option<String>,
         album_filter: Option<String>,
         track_filter: Option<String>,
         limit: u32,
         offset: u32,
-    ) -> Result<PottySearchResults, PottyError> {
+    ) -> Result<SearchResults, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.advanced_search(
             &query,
             &search_type,
@@ -212,62 +184,55 @@ impl PottyClient {
         )
     }
     
-    /// Gets the user's liked/saved songs with pagination support
-    /// 
-    /// # Arguments
-    /// * `offset` - The offset for pagination (0-based)
-    /// * `limit` - Maximum number of results to return (max 50)
-    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<Track>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.get_liked_songs(offset, limit)
     }
     
-    /// Gets the user's playlists
-    pub fn get_user_playlists(&self) -> Result<Vec<PottyPlaylist>, PottyError> {
+    pub fn get_user_playlists(&self) -> Result<Vec<Playlist>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.get_user_playlists()
     }
     
-    /// Gets tracks from a specific playlist
-    pub fn get_playlist_tracks(&self, playlist_id: String) -> Result<Vec<PottyTrack>, PottyError> {
+    pub fn get_playlist_tracks(&self, playlist_id: String) -> Result<Vec<Track>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.get_playlist_tracks(&playlist_id)
     }
     
-    /// Gets the user's saved albums with pagination support
-    /// 
-    /// # Arguments
-    /// * `offset` - The offset for pagination (0-based)
-    /// * `limit` - Maximum number of results to return (max 50)
-    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
+    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<Album>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.get_user_saved_albums(offset, limit)
     }
     
-    /// Gets the user's followed artists
-    pub fn get_user_followed_artists(&self) -> Result<Vec<PottyArtist>, PottyError> {
+    pub fn get_user_followed_artists(&self) -> Result<Vec<Artist>, PottyError> {
         let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
+        let api_guard = self.web_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
         api.get_user_followed_artists()
+    }
+    
+    // ========== Librespot Metadata API ==========
+    
+    pub fn get_artist_metadata(&self, artist_uri: String) -> Result<ArtistMetadata, PottyError> {
+        let _guard = self.runtime.enter();
+        let metadata_guard = self.metadata.lock().unwrap();
+        let metadata = metadata_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        metadata.get_artist_metadata(&artist_uri)
+    }
+    
+    pub fn get_album_metadata(&self, album_uri: String) -> Result<AlbumMetadata, PottyError> {
+        let _guard = self.runtime.enter();
+        let metadata_guard = self.metadata.lock().unwrap();
+        let metadata = metadata_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        metadata.get_album_metadata(&album_uri)
     }
 }
 
