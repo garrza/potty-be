@@ -212,24 +212,18 @@ impl PottyClient {
         )
     }
     
-    /// Gets the user's liked/saved songs (first page)
-    pub fn get_liked_songs(&self) -> Result<Vec<PottyTrack>, PottyError> {
+    /// Gets the user's liked/saved songs with pagination support
+    /// 
+    /// # Arguments
+    /// * `offset` - The offset for pagination (0-based)
+    /// * `limit` - Maximum number of results to return (max 50)
+    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
         let _guard = self.runtime.enter();
         
         let api_guard = self.spotify_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
         
-        api.get_liked_songs()
-    }
-    
-    /// Gets liked songs with pagination
-    pub fn get_liked_songs_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
-        let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
-        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
-        api.get_liked_songs_paginated(offset, limit)
+        api.get_liked_songs(offset, limit)
     }
     
     /// Gets the user's playlists
@@ -252,24 +246,18 @@ impl PottyClient {
         api.get_playlist_tracks(&playlist_id)
     }
     
-    /// Gets the user's saved albums (first page)
-    pub fn get_user_saved_albums(&self) -> Result<Vec<PottyAlbum>, PottyError> {
+    /// Gets the user's saved albums with pagination support
+    /// 
+    /// # Arguments
+    /// * `offset` - The offset for pagination (0-based)
+    /// * `limit` - Maximum number of results to return (max 50)
+    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
         let _guard = self.runtime.enter();
         
         let api_guard = self.spotify_api.lock().unwrap();
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
         
-        api.get_user_saved_albums()
-    }
-    
-    /// Gets saved albums with pagination
-    pub fn get_user_saved_albums_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
-        let _guard = self.runtime.enter();
-        
-        let api_guard = self.spotify_api.lock().unwrap();
-        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
-        
-        api.get_user_saved_albums_paginated(offset, limit)
+        api.get_user_saved_albums(offset, limit)
     }
     
     /// Gets the user's followed artists

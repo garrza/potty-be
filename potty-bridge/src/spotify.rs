@@ -69,13 +69,12 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Gets the user's liked/saved tracks (first page only, use offset for pagination)
-    pub fn get_liked_songs(&self) -> Result<Vec<PottyTrack>, PottyError> {
-        self.get_liked_songs_paginated(0, DEFAULT_LIMIT)
-    }
-    
-    /// Gets liked songs with pagination support
-    pub fn get_liked_songs_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
+    /// Gets the user's liked/saved tracks with pagination support
+    /// 
+    /// # Arguments
+    /// * `offset` - The offset for pagination (default: 0)
+    /// * `limit` - Maximum number of results to return (default: 50, max: 50)
+    pub fn get_liked_songs(&self, offset: u32, limit: u32) -> Result<Vec<PottyTrack>, PottyError> {
         let api = self.api.clone();
         let limit = limit.min(DEFAULT_LIMIT);
         
@@ -95,13 +94,12 @@ impl SpotifyApiManager {
         })
     }
     
-    /// Gets the user's saved albums (first page only, use offset for pagination)
-    pub fn get_user_saved_albums(&self) -> Result<Vec<PottyAlbum>, PottyError> {
-        self.get_user_saved_albums_paginated(0, DEFAULT_LIMIT)
-    }
-    
-    /// Gets saved albums with pagination support
-    pub fn get_user_saved_albums_paginated(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
+    /// Gets the user's saved albums with pagination support
+    /// 
+    /// # Arguments
+    /// * `offset` - The offset for pagination (default: 0)
+    /// * `limit` - Maximum number of results to return (default: 50, max: 50)
+    pub fn get_user_saved_albums(&self, offset: u32, limit: u32) -> Result<Vec<PottyAlbum>, PottyError> {
         let api = self.api.clone();
         let limit = limit.min(DEFAULT_LIMIT);
         
