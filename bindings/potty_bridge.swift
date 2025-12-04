@@ -501,9 +501,15 @@ public protocol PottyClientProtocol : AnyObject {
     
     func getArtistMetadata(artistUri: String) throws  -> ArtistMetadata
     
+    func getFeaturedPlaylists(limit: UInt32, offset: UInt32) throws  -> [Playlist]
+    
     func getLikedSongs(offset: UInt32, limit: UInt32) throws  -> [Track]
     
+    func getNewReleases(limit: UInt32, offset: UInt32) throws  -> [Album]
+    
     func getPlaylistTracks(playlistId: String) throws  -> [Track]
+    
+    func getRecentlyPlayed(limit: UInt32) throws  -> [Track]
     
     func getUserFollowedArtists() throws  -> [Artist]
     
@@ -634,6 +640,15 @@ open func getArtistMetadata(artistUri: String)throws  -> ArtistMetadata {
 })
 }
     
+open func getFeaturedPlaylists(limit: UInt32, offset: UInt32)throws  -> [Playlist] {
+    return try  FfiConverterSequenceTypePlaylist.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_featured_playlists(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(limit),
+        FfiConverterUInt32.lower(offset),$0
+    )
+})
+}
+    
 open func getLikedSongs(offset: UInt32, limit: UInt32)throws  -> [Track] {
     return try  FfiConverterSequenceTypeTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_liked_songs(self.uniffiClonePointer(),
@@ -643,10 +658,27 @@ open func getLikedSongs(offset: UInt32, limit: UInt32)throws  -> [Track] {
 })
 }
     
+open func getNewReleases(limit: UInt32, offset: UInt32)throws  -> [Album] {
+    return try  FfiConverterSequenceTypeAlbum.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_new_releases(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(limit),
+        FfiConverterUInt32.lower(offset),$0
+    )
+})
+}
+    
 open func getPlaylistTracks(playlistId: String)throws  -> [Track] {
     return try  FfiConverterSequenceTypeTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
     uniffi_potty_bridge_fn_method_pottyclient_get_playlist_tracks(self.uniffiClonePointer(),
         FfiConverterString.lower(playlistId),$0
+    )
+})
+}
+    
+open func getRecentlyPlayed(limit: UInt32)throws  -> [Track] {
+    return try  FfiConverterSequenceTypeTrack.lift(try rustCallWithError(FfiConverterTypePottyError.lift) {
+    uniffi_potty_bridge_fn_method_pottyclient_get_recently_played(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(limit),$0
     )
 })
 }
@@ -2289,10 +2321,19 @@ private var initializationResult: InitializationResult = {
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_artist_metadata() != 46562) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_featured_playlists() != 27964) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_liked_songs() != 55012) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_new_releases() != 34347) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_playlist_tracks() != 57401) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_potty_bridge_checksum_method_pottyclient_get_recently_played() != 21514) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_potty_bridge_checksum_method_pottyclient_get_user_followed_artists() != 41518) {

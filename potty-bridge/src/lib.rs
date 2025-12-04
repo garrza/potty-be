@@ -197,6 +197,27 @@ impl PottyClient {
         let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
         api.get_user_playlists()
     }
+
+    pub fn get_recently_played(&self, limit: u32) -> Result<Vec<Track>, PottyError> {
+        let _guard = self.runtime.enter();
+        let api_guard = self.web_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        api.get_recently_played(limit)
+    }
+
+    pub fn get_new_releases(&self, limit: u32, offset: u32) -> Result<Vec<Album>, PottyError> {
+        let _guard = self.runtime.enter();
+        let api_guard = self.web_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        api.get_new_releases(limit, offset)
+    }
+
+    pub fn get_featured_playlists(&self, limit: u32, offset: u32) -> Result<Vec<Playlist>, PottyError> {
+        let _guard = self.runtime.enter();
+        let api_guard = self.web_api.lock().unwrap();
+        let api = api_guard.as_ref().ok_or(PottyError::NotConnected)?;
+        api.get_featured_playlists(limit, offset)
+    }
     
     pub fn get_playlist_tracks(&self, playlist_id: String) -> Result<Vec<Track>, PottyError> {
         let _guard = self.runtime.enter();

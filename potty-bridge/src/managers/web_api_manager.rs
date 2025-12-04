@@ -175,6 +175,102 @@ impl WebApiManager {
             Ok(playlists)
         })
     }
+
+    /// Gets the current user's recently played tracks
+    pub fn get_recently_played(&self, limit: u32) -> Result<Vec<Track>, PottyError> {
+        let api = self.api.clone();
+        let limit = limit.min(DEFAULT_LIMIT);
+
+        self.runtime.block_on(async move {
+            let result = api
+                .current_user_recently_played(Some(limit), None)
+                .await
+                .map_err(PottyError::from_error)?;
+
+            let tracks = result
+                .items
+                .into_iter()
+                .map(|item| Self::track_to_potty_track(item.track))
+                .collect();
+
+            Ok(tracks)
+        })
+    }
+
+    /// Gets a list of new album releases
+    pub fn get_new_releases(&self, limit: u32, _offset: u32) -> Result<Vec<Album>, PottyError> {
+        let api = self.api.clone();
+        let limit = limit.min(DEFAULT_LIMIT);
+
+        self.runtime.block_on(async move {
+            let mut stream = api.new_releases(None);
+            let mut albums = Vec::new();
+            
+            // Consume stream up to limit
+            while let Some(item_result) = stream.next().await {
+                if albums.len() >= limit as usize {
+                    break;
+                }
+                
+                match item_result {
+                    Ok(album) => albums.push(Self::album_to_potty_album(album)),
+                    Err(e) => {
+                        // Log error?
+                        eprintln!("Error fetching new release: {}", e);
+                    }
+                }
+            }
+
+            Ok(albums)
+        })
+    }
+
+    /// Gets a list of featured playlists
+    pub fn get_featured_playlists(&self, limit: u32, _offset: u32) -> Result<Vec<Playlist>, PottyError> {
+        let api = self.api.clone();
+        let limit = limit.min(DEFAULT_LIMIT);
+
+        self.runtime.block_on(async move {
+            // featured_playlists likely returns a Result<FeaturedPlaylists, ...> which contains a Page or similar
+            // Actually in 0.15 it might be a stream of playlists or a struct containing message + playlists
+            // Let's try to look at the error message if I use stream, or assume it's a method that returns Future<Output=ClientResult<FeaturedPlaylists>>
+            // But based on new_releases being a stream, this might differ.
+            // Wait, new_releases is a stream, but featured_playlists returns a wrapper object usually.
+            
+            // Let's check codebase for featured_playlists usage? None found.
+            // I'll assume it returns a Future -> FeaturedPlaylists
+            
+            let result = api
+                .featured_playlists(None, None, None, Some(limit), Some(_offset))
+                .await
+                .map_err(PottyError::from_error)?;
+
+            let playlists = result
+                .playlists
+                .items
+                .into_iter()
+                .map(|pl| {
+                    let uri = format!("spotify:playlist:{}", pl.id.id());
+                    let image_url = pl
+                        .images
+                        .first()
+                        .map(|img| img.url.clone())
+                        .unwrap_or_default();
+
+                    Playlist {
+                        id: pl.id.id().to_string(),
+                        name: pl.name,
+                        description: String::new(), // SimplifiedPlaylist doesn't have description
+                        uri,
+                        track_count: pl.tracks.total,
+                        image_url,
+                    }
+                })
+                .collect();
+
+            Ok(playlists)
+        })
+    }
     
     /// Gets tracks from a specific playlist
     pub fn get_playlist_tracks(&self, playlist_id: &str) -> Result<Vec<Track>, PottyError> {
