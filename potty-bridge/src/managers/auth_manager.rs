@@ -16,6 +16,7 @@ const SCOPES: &[&str] = &[
     "user-modify-playback-state",
     "user-library-read",
     "user-follow-read",
+    "user-read-recently-played",
 ];
 
 /// Manages OAuth authentication flow
